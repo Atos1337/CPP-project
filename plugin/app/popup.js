@@ -22,4 +22,4 @@ port.onDisconnect.addListener(function() {
 document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('send-message-button').addEventListener(
         'click', sendNativeMessage);
-});
+}); 

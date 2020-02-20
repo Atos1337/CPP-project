@@ -1,6 +1,11 @@
 {
+    "manifest_version": 2,
+    "minimum_chrome_version": "29",
+    
     "name": "Test extension",
+    "version": "0.1",
     "description": "Native messaging test",
+    
     "permissions": [
         "nativeMessaging",
         "tabs",
@@ -14,8 +19,5 @@
     "browser_action": {
         "default_icon": "icon.png",
         "default_popup": "popup.html"
-    },
-    "version": "1.0",
-    "minimum_chrome_version": "29",
-    "manifest_version": 2
+    }
 }
