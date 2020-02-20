@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
+#include <json.hpp>
+using json = nlohmann::json;
 
-std::string getMessage() {
+json getMessage() {
     size_t length = 0;
     for (size_t i = 0; i < 4; i++) {
         unsigned char read_char = getchar();
@@ -12,10 +14,11 @@ std::string getMessage() {
     for (size_t i = 0; i < length; i++) {
         msg += getchar();
     }
-    return msg;
+    return json::parse(msg);
 }
 
-void sendMessage(const std::string &msg) {
+void sendMessage(const json &json_msg) {
+    std::string msg = json_msg.dump();
     size_t len = msg.length();
     for (size_t i = 0; i <= 24; i += 8) {
         std::cout << char(len >> i);
@@ -24,15 +27,14 @@ void sendMessage(const std::string &msg) {
 }
 
 int main(){
-    
     while (true) {
-        std::string msg = getMessage();
-        std::cerr << msg << std::endl;
-        if (msg == "{\"text\":\"Hi\"}") {
-            sendMessage("{\"text\":\"Hi from C++\"}");
+        json msg = getMessage();
+        std::cerr << msg.dump() << std::endl;
+        if (msg["text"] == "Hi") {
+            sendMessage(R"({"text": "Hi from C++"})");
         }
         else {
-            sendMessage("{\"text\":\"Unknown command\"}");
+            sendMessage(R"({"text": "Unknown command"})");
         }
     }
 
