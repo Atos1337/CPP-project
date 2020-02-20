@@ -11,7 +11,8 @@
         "tabs",
         "activeTab",
         "background",
-        "http://*/", "https://*/"
+        "http://*/", "https://*/",
+        "downloads"
         ],
     "background": {
         "scripts": ["background.js"]
