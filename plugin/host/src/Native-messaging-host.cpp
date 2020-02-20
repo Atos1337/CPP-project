@@ -27,6 +27,7 @@ int main(){
     
     while (true) {
         std::string msg = getMessage();
+        std::cerr << msg << std::endl;
         if (msg == "{\"text\":\"Hi\"}") {
             sendMessage("{\"text\":\"Hi from C++\"}");
         }
