@@ -5,12 +5,20 @@
 #include "ZIP-file_headers.h"
 #include "zlib.h"
 
-EOCD* read_eocd(std::ifstream& in);
+namespace ZIP_file_reading {
 
-CentralDirectoryFileHeader* read_cdfh(std::ifstream& in);
+std::ifstream& operator>>(std::ifstream& in, EOCD& eocd);
 
-DataDescriptor* read_dd(std::ifstream& in);
+std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh);
 
-LocalFileHeader* read_lfh(std::ifstream& in);
+std::ifstream& operator>>(std::ifstream& in, DataDescriptor& dd);
 
-uint8_t* read_data(std::ifstream& in, const LocalFileHeader& lfh);
+std::ifstream& operator>>(std::ifstream& in, LocalFileHeader& lfh);
+
+void inflate_data(File& f);
+
+std::ifstream& operator>>(std::ifstream& in, File& f);
+
+std::ifstream& operator>>(std::ifstream& in, std::ofstream& out);
+
+} //namespace ZIP_file_reading

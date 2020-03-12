@@ -2,6 +2,7 @@
 #pragma pack(1)
 
 #include <cstdint>
+#include <memory>
 
 constexpr struct signatures {
 	uint32_t LFH = 0x04034b50,
@@ -32,13 +33,16 @@ struct LocalFileHeader {
     // Длина поля с дополнительными данными
     uint16_t extraFieldLength;
     // Название файла (размером filenameLength)
-    uint8_t *filename = nullptr;
+    std::unique_ptr<uint8_t[]> filename;
     // Дополнительные данные (размером extraFieldLength)
-    uint8_t *extraField = nullptr;
-    ~LocalFileHeader() {
-    	delete [] filename;
-    	delete [] extraField;
-    }
+    std::unique_ptr<uint8_t[]> extraField;
+};
+
+struct File {
+    std::unique_ptr<uint8_t[]> data;
+    uint16_t compressionMethod;
+    uint32_t compressedSize;
+    uint32_t uncompressedSize;
 };
 
 struct DataDescriptor {
@@ -84,16 +88,11 @@ struct CentralDirectoryFileHeader {
     // Смещение до структуры LocalFileHeader
     uint32_t localFileHeaderOffset;
     // Имя файла (длиной filenameLength)
-    uint8_t *filename = nullptr;
+    std::unique_ptr<uint8_t[]> filename;
     // Дополнительные данные (длиной extraFieldLength)
-    uint8_t *extraField = nullptr;
+    std::unique_ptr<uint8_t[]> extraField;
     // Комментарий к файла (длиной fileCommentLength)
-    uint8_t *fileComment = nullptr;
-    ~CentralDirectoryFileHeader() {
-    	delete [] filename;
-    	delete [] extraField;
-    	delete [] fileComment;
-    }
+    std::unique_ptr<uint8_t[]> fileComment;
 };
 
 struct EOCD {
@@ -112,8 +111,5 @@ struct EOCD {
     // Длина комментария
     uint16_t commentLength;
     // Комментарий (длиной commentLength)
-    uint8_t *comment = nullptr;
-    ~EOCD() {
-    	delete [] comment;
-    }
+    std::unique_ptr<uint8_t[]> comment;
 };
