@@ -3,6 +3,8 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
+namespace message {
+
 json getMessage() {
     size_t length = 0;
     for (size_t i = 0; i < 4; i++) {
@@ -26,15 +28,22 @@ void sendMessage(const json &json_msg) {
     std::cout << msg << std::flush;
 }
 
+} // namespace message
+
 int main(){
     while (true) {
-        json msg = getMessage();
+        json msg = message::getMessage();
         std::cerr << msg.dump() << std::endl;
-        if (msg["text"] == "Hi") {
-            sendMessage(R"({"text": "Hi from C++"})");
+        if (msg.find("file") != msg.end()) {
+            message::sendMessage(R"({"Certificate": "123"})");
         }
         else {
-            sendMessage(R"({"text": "Unknown command"})");
+            if (msg["text"] == "Hi") {
+                message::sendMessage(R"({"text": "Hi from C++"})");
+            }
+            else {
+                message::sendMessage(R"({"text": "Unknown command"})");
+            }
         }
     }
 

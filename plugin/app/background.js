@@ -1,6 +1,8 @@
 var port = chrome.runtime.connectNative('com.project.native_messaging_host');
 
-port.onMessage.addListener(function onNativeMessage(msg) {});
+port.onMessage.addListener(function onNativeMessage(msg) {
+    alert(msg);
+});
 
 port.onDisconnect.addListener(function() {
   console.log("Disconnected");
