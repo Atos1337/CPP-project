@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <assert.h>
 #include "openssl/asn1.h"
 #include "openssl/bio.h"
 #include "openssl/conf.h"
@@ -12,119 +13,63 @@
 
 
 // Smart pointers to wrap openssl C types that need explicit free
-using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
-using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
-using ASN1_TIME_ptr = std::unique_ptr<ASN1_TIME, decltype(&ASN1_STRING_free)>;
+using BIO_ptr  = std::unique_ptr<BIO, decltype(&BIO_free)>;
 
+class Certificate {
+public:
+    static void init() {
+        OpenSSL_add_all_algorithms();
+        ERR_load_crypto_strings();
+        OPENSSL_no_config();
+    }
 
-// Convert the contents of an openssl BIO to a std::string
-std::string bio_to_string(const BIO_ptr& bio, const int& max_len)
-{
-    // We are careful to do operations based on explicit lengths, not depending
-    // on null terminated character streams except where we ensure the terminator
+    static void destroy() {
+        FIPS_mode_set(0);
+        CONF_modules_unload(1);
+        CONF_modules_free();
+        ERR_free_strings();
+        EVP_cleanup();
+        CRYPTO_cleanup_all_ex_data();
+    }
 
-    // Create a buffer and zero it out
-    char buffer[max_len];
-    memset(buffer, 0, max_len);
-    // Read one smaller than the buffer to make sure we end up with a null
-    // terminator no matter what
-    BIO_read(bio.get(), buffer, max_len - 1);
-    return std::string(buffer);
-}
+    Certificate(std::string filename) {
+        BIO_ptr bio_input_ptr(BIO_new(BIO_s_file()), BIO_free);
+        if (BIO_read_filename(bio_input_ptr.get(), filename.c_str()) <= 0) {
+            throw std::runtime_error("Could not open file");
+        }
+        cert = PEM_read_bio_X509_AUX(bio_input_ptr.get(), NULL, NULL, NULL);
+    }
 
+    ~Certificate() {
+        X509_free(cert);
+    }
 
-int main(int argc, char** argv)
-{
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-    OPENSSL_no_config();
+    std::string get_bio() {
+        BIO_ptr bio_output_ptr(BIO_new(BIO_s_mem()), BIO_free);
+        X509_NAME_print_ex(bio_output_ptr.get(), X509_get_subject_name(cert), 0, 0);
+        char buffer[MAX_LEN];
+        memset(buffer, 0, MAX_LEN);
+        BIO_read(bio_output_ptr.get(), buffer, MAX_LEN - 1);
+        return std::string(buffer);
+    }
 
+private:
+    const size_t MAX_LEN = 4096;
+    X509 *cert;
+    X509_NAME *subject;
+};
 
-    //
-    // Read the certificate contents from disk
-    //
+int main(int argc, char** argv) {
+    Certificate::init();
     if (argc < 2)
     {
         std::cout << "Missing filename" << std::endl;
         return 1;
     }
-    std::string inFile(argv[1]);
-    std::cout << inFile << std::endl;
-    std::cout << std::endl;
 
-    BIO_ptr input(BIO_new(BIO_s_file()), BIO_free);
-    if (BIO_read_filename(input.get(), inFile.c_str()) <= 0)
-    {
-        std::cout << "Error reading file" << std::endl;
-        return 1;
-    }
-
-
-    // Create an openssl certificate from the BIO
-    X509_ptr cert(PEM_read_bio_X509_AUX(input.get(), NULL, NULL, NULL), X509_free);
-
-    // Create a BIO to hold info from the cert
-    BIO_ptr output_bio(BIO_new(BIO_s_mem()), BIO_free);
-
-    //
-    // Get the subject of the certificate.
-    //
-
-    // According to the openssl documentation:
-    // The returned value is an internal pointer which MUST NOT be freed
-    X509_NAME *subject = X509_get_subject_name(cert.get());
-
-    // Print the subject into a BIO and then get a string
-    X509_NAME_print_ex(output_bio.get(), subject, 0, 0);
-    std::string cert_subject = bio_to_string(output_bio, 4096);
-
-    // Max subject length should be 555 bytes with ascii characters or 3690
-    // bytes with unicode, based on the max allowed lengths for each component
-    // of the subject plus the formatting.
-    // Country code - 2 bytes
-    // State/locality name - 128 bytes
-    // Organization name - 64 bytes
-    // Organizational unit name - 64 bytes
-    // Common name - 64 bytes
-    // email address - 64 bytes
-
-    std::cout << "Subject:" << std::endl;
-    std::cout << cert_subject << std::endl;
-    std::cout << std::endl;
-
-
-    //
-    // Get the expiration date of the certificate
-    //
-
-    // X509_get_notAfter returns the time that the cert expires, in Abstract
-    // Syntax Notation
-    // According to the openssl documentation:
-    // The returned value is an internal pointer which MUST NOT be freed
-    ASN1_TIME *expires = X509_get_notAfter(cert.get());
-
-    // Construct another ASN1_TIME for the unix epoch, get the difference
-    // between them and use that to calculate a unix timestamp representing
-    // when the cert expires
-    ASN1_TIME_ptr epoch(ASN1_TIME_new(), ASN1_STRING_free);
-    ASN1_TIME_set_string(epoch.get(), "700101000000");
-    int days, seconds;
-    ASN1_TIME_diff(&days, &seconds, epoch.get(), expires);
-    time_t expire_timestamp = (days * 24 * 60 * 60) + seconds;
-
-    std::cout << "Expiration timestamp:" << std::endl;
-    std::cout << expire_timestamp << std::endl;
-    std::cout << std::endl;
-
-
-    FIPS_mode_set(0);
-    CONF_modules_unload(1);
-    CONF_modules_free();
-    ERR_free_strings();
-    EVP_cleanup();
-    CRYPTO_cleanup_all_ex_data();
-   
-
+    Certificate certificate(argv[1]);
+    std::cout << certificate.get_bio();
+    Certificate::destroy();
 
     return 0;
 }
