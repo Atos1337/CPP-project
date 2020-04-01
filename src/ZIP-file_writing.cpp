@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
 
 namespace ZIP_file_writing{
 
@@ -82,14 +85,17 @@ void deflate_data(File& f) {
 	f.data = std::move(data_buf);
 }
 
-std::ofstream& operator<<(std::ofstream& out, std::ifstream& in) {
-	in.seekg(0, in.end);
-	uint32_t size_sertificate = in.tellg();
-	in.seekg(0, in.beg);
-	std::unique_ptr<uint8_t[]> read_buf(new uint8_t[size_sertificate]);
-	in.read(reinterpret_cast<char *>(read_buf.get()), size_sertificate);
-	out.write(reinterpret_cast<char *>(&size_sertificate), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(read_buf.get()), size_sertificate);
+std::ofstream& operator<<(std::ofstream& out, const char *certificate) {
+	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
+	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
+	uint8_t *buf = nullptr;
+	uint32_t size = 0;
+	BIO_ptr cert_bio(BIO_new(BIO_s_file()), BIO_free);
+	BIO_read_filename(cert_bio.get(), certificate);
+	X509_ptr x509(PEM_read_bio_X509_AUX(cert_bio.get(), NULL, 0, NULL), X509_free);
+	size = i2d_X509(x509.get(), &buf);
+	out.write(reinterpret_cast<char *>(&size), sizeof(uint32_t));
+	out.write(reinterpret_cast<char *>(buf), size);
 	return out;
 }
 

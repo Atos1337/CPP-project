@@ -35,8 +35,7 @@ namespace ZIP_file_signing {
 		for (int i = 0; i < eocd->totalCentralDirectoryRecord; i++) {
 			out << lfh[i] << f[i];
 		}
-		std::ifstream signing_file(sertificate, std::ios::binary);
-		out << signing_file;
+		out << sertificate;
 		eocd->centralDirectoryOffset = out.tellp();
 		for (int i = 0; i < eocd->totalCentralDirectoryRecord; i++) {
 			out << cdfh[i];

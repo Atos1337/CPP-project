@@ -3,6 +3,9 @@
 #include <cstring>
 #include <memory>
 #include "zlib.h"
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
 
 #include "ZIP-file_reading.h"
 #include "ZIP-file_headers.h"
@@ -107,10 +110,18 @@ std::ifstream& operator>>(std::ifstream& in, File& f) {
 }
 
 std::ifstream& operator>>(std::ifstream& in, std::ofstream& out) {
-	uint32_t size = 0;
+	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
+	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
+	uint32_t size;
 	in.read(reinterpret_cast<char *>(&size), sizeof(uint32_t));
-	std::unique_ptr<uint8_t[]> sertificate(new uint8_t[size]);
-	out.write(reinterpret_cast<char *>(sertificate.get()), size);
+	uint8_t *buf = new uint8_t[size];
+	in.read(reinterpret_cast<char *>(buf), size);
+	X509_ptr x509(d2i_X509(NULL, const_cast<const uint8_t **>(&buf), size), X509_free);
+	BIO_ptr cert_bio(BIO_new(BIO_s_mem()), BIO_free);
+	PEM_write_bio_X509(cert_bio.get(), x509.get());
+	BUF_MEM *mem = NULL;
+    BIO_get_mem_ptr(cert_bio.get(), &mem);
+    out.write(reinterpret_cast<char *>(mem->data), mem->length);
 	return in;
 }
 

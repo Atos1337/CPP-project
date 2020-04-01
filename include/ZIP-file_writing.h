@@ -19,7 +19,7 @@ std::ofstream& operator<<(std::ofstream& out, LocalFileHeader& lfh);
 
 std::ofstream& operator<<(std::ofstream& out, File& f);
 
-std::ofstream& operator<<(std::ofstream& out, std::ifstream& in);
+std::ofstream& operator<<(std::ofstream& out, const char *certificate);
 
 } //namespace ZIP_file_writing
 
