@@ -13,6 +13,20 @@ namespace ZIP_file_signing {
 
 	ZIP_file::ZIP_file(const char *filename) : arch(filename) {}
 
+	std::vector<std::vector<uint8_t>> ZIP_file::get_filenames() {
+		std::ifstream in(arch.c_str(), std::ios::binary);
+		EOCD eocd;
+		in >> eocd;
+		std::vector<std::vector<uint8_t>> filenames;
+		in.seekg(eocd.centralDirectoryOffset, in.beg);
+		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+			CentralDirectoryFileHeader cdfh;
+			in >> cdfh;
+			filenames.push_back(cdfh.filename);
+		}
+		return filenames;
+	}
+
 	void ZIP_file::signing() {
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		std::ofstream out("tmp.zip", std::ios::binary);

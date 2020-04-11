@@ -10,6 +10,7 @@ public:
 	void signing();
 	bool check_sign();
 	void load_certificate(const char *certificate);
+	std::vector<std::vector<uint8_t>> get_filenames();
 	/*std::vector<uint8_t> get_certificate(const CentralDirectoryFileHeader &cdfh);
 	std::vector<uint8_t> get_signature(const LocalFileHeader &lfh);*/
 private:
