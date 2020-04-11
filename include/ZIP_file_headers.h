@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 enum class valid_signatures : uint32_t {
     LFH = 0x04034b50,
@@ -14,7 +15,7 @@ enum class valid_signatures : uint32_t {
 struct extraFieldRecord {
     uint16_t signature;
     uint16_t size;
-    std::unique_ptr<uint8_t[]> data;
+    std::vector<uint8_t> data;
 };
 
 struct LocalFileHeader {
@@ -38,16 +39,14 @@ struct LocalFileHeader {
     uint16_t filenameLength;
     // Длина поля с дополнительными данными
     uint16_t extraFieldLength;
-    //Количество записей в доп.поле
-    uint16_t totalExtraFieldRecord;
     // Название файла (размером filenameLength)
-    std::unique_ptr<uint8_t[]> filename;
+    std::vector<uint8_t> filename;
     // Дополнительные данные (размером extraFieldLength)
-    std::unique_ptr<extraFieldRecord[]> extraField;
+    std::vector<extraFieldRecord> extraField;
 };
 
 struct File {
-    std::unique_ptr<uint8_t[]> data;
+    std::vector<uint8_t> data;
     uint16_t compressionMethod;
     uint32_t compressedSize;
     uint32_t uncompressedSize;
@@ -95,14 +94,12 @@ struct CentralDirectoryFileHeader {
     uint32_t externalFileAttributes;
     // Смещение до структуры LocalFileHeader
     uint32_t localFileHeaderOffset;
-    // Количество записей в доп.поле
-    uint16_t totalExtraFieldRecord;
     // Имя файла (длиной filenameLength)
-    std::unique_ptr<uint8_t[]> filename;
+    std::vector<uint8_t> filename;
     // Дополнительные данные (длиной extraFieldLength)
-    std::unique_ptr<extraFieldRecord[]> extraField;
+    std::vector<extraFieldRecord> extraField;
     // Комментарий к файла (длиной fileCommentLength)
-    std::unique_ptr<uint8_t[]> fileComment;
+    std::vector<uint8_t> fileComment;
 };
 
 struct EOCD {
@@ -121,5 +118,5 @@ struct EOCD {
     // Длина комментария
     uint16_t commentLength;
     // Комментарий (длиной commentLength)
-    std::unique_ptr<uint8_t[]> comment;
+    std::vector<uint8_t> comment;
 };

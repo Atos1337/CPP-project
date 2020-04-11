@@ -16,9 +16,9 @@ namespace ZIP_file_writing{
 std::ofstream& operator<<(std::ofstream& out, EOCD& eocd) {
 	uint32_t signature = static_cast<uint32_t>(valid_signatures::EOCD);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&eocd), sizeof(eocd) - sizeof(uint8_t *));
+	out.write(reinterpret_cast<char *>(&eocd), sizeof(eocd) - sizeof(eocd.comment));
 	if (eocd.commentLength) {
-		out.write(reinterpret_cast<char *>(eocd.comment.get()), eocd.commentLength);
+		out.write(reinterpret_cast<char *>(eocd.comment.data()), eocd.commentLength);
 	}
 	return out;
 }
@@ -26,19 +26,18 @@ std::ofstream& operator<<(std::ofstream& out, EOCD& eocd) {
 std::ofstream& operator<<(std::ofstream& out, CentralDirectoryFileHeader& cdfh) {
 	uint32_t signature = static_cast<uint32_t>(valid_signatures::CDFH);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - 3 * sizeof(uint8_t *) - sizeof(uint16_t));
+	out.write(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - sizeof(cdfh.extraField) - sizeof(cdfh.fileComment) - sizeof(cdfh.filename));
 	if (cdfh.filenameLength) {
-		out.write(reinterpret_cast<char *>(cdfh.filename.get()), cdfh.filenameLength);
+		out.write(reinterpret_cast<char *>(cdfh.filename.data()), cdfh.filenameLength);
 	}
-	if (cdfh.totalExtraFieldRecord) {
-		for (int i = 0; i < cdfh.totalExtraFieldRecord; ++i) {
-			auto &efr = cdfh.extraField[i];
-			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(uint8_t *));
-			out.write(reinterpret_cast<char *>(efr.data.get()), efr.size);
+	if (cdfh.extraField.size()) {
+		for (auto &efr : cdfh.extraField) {
+			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(efr.data));
+			out.write(reinterpret_cast<char *>(efr.data.data()), efr.size);
 		}
 	}
 	if (cdfh.fileCommentLength) {
-		out.write(reinterpret_cast<char *>(cdfh.fileComment.get()), cdfh.fileCommentLength);
+		out.write(reinterpret_cast<char *>(cdfh.fileComment.data()), cdfh.fileCommentLength);
 	}
 	return out;
 }
@@ -53,27 +52,26 @@ std::ofstream& operator<<(std::ofstream& out, DataDescriptor& dd) {
 std::ofstream& operator<<(std::ofstream& out, LocalFileHeader& lfh) {
 	uint32_t signature = static_cast<uint32_t>(valid_signatures::LFH);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&lfh), sizeof(lfh) - 2 * sizeof(uint8_t *) - sizeof(uint16_t));
+	out.write(reinterpret_cast<char *>(&lfh), sizeof(lfh) - sizeof(lfh.filename) - sizeof(lfh.extraField));
 	if (lfh.filenameLength) {
-		out.write(reinterpret_cast<char *>(lfh.filename.get()), lfh.filenameLength);
+		out.write(reinterpret_cast<char *>(lfh.filename.data()), lfh.filenameLength);
 	}
-	if (lfh.totalExtraFieldRecord) {
-		for (int i = 0; i < lfh.totalExtraFieldRecord; ++i) {
-			auto &efr = lfh.extraField[i];
-			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(uint8_t *));
-			out.write(reinterpret_cast<char *>(efr.data.get()), efr.size);
+	if (lfh.extraField.size()) {
+		for (auto &efr : lfh.extraField) {
+			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(efr.data));
+			out.write(reinterpret_cast<char *>(efr.data.data()), efr.size);
 		}
 	}
 	return out;
 }
 
 std::ofstream& operator<<(std::ofstream& out, File& f) {
-	out.write(reinterpret_cast<char *>(f.data.get()), f.compressedSize);
+	out.write(reinterpret_cast<char *>(f.data.data()), f.compressedSize);
 	return out;
 }
 
 void deflate_data(File& f) {
-	std::unique_ptr<uint8_t[]> data_buf = std::make_unique<uint8_t[]>(f.uncompressedSize * 2 + 12);
+	std::vector<uint8_t> data_buf(f.uncompressedSize * 2 + 12);
 	z_stream zs;
 	std::memset(&zs, 0, sizeof(zs));
 	deflateInit2(
@@ -84,9 +82,9 @@ void deflate_data(File& f) {
         8,
         Z_DEFAULT_STRATEGY);
 	zs.avail_in = f.uncompressedSize;
-	zs.next_in = f.data.get();
+	zs.next_in = f.data.data();
 	zs.avail_out = f.uncompressedSize;
-	zs.next_out = data_buf.get();
+	zs.next_out = data_buf.data();
 	deflate(&zs, Z_FINISH);
 	f.compressedSize = zs.total_out;
 	f.compressionMethod = Z_DEFLATED;

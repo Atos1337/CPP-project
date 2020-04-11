@@ -18,17 +18,17 @@ namespace ZIP_file_reading{
 std::ifstream& operator>>(std::ifstream& in, EOCD& eocd) {
 	in.seekg(0, in.end);
 	size_t filesize = in.tellg();
-	for (size_t offset = filesize - sizeof(EOCD) - sizeof(uint32_t) + sizeof(uint8_t *); offset > 0; offset--) {
+	for (size_t offset = filesize - sizeof(eocd) - sizeof(uint32_t) + sizeof(eocd.comment); offset > 0; offset--) {
 		uint32_t signature = 0;
 		in.seekg(offset, in.beg);
 		in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
 		if (signature == static_cast<uint32_t>(valid_signatures::EOCD)) 
 			break;
 	}
-	in.read(reinterpret_cast<char *>(&eocd), sizeof(EOCD) - sizeof(uint8_t *));
+	in.read(reinterpret_cast<char *>(&eocd), sizeof(eocd) - sizeof(eocd.comment));
 	if (eocd.commentLength) {
-		eocd.comment = std::unique_ptr<uint8_t[]>(new uint8_t[eocd.commentLength]);
-		in.read(reinterpret_cast<char *>(eocd.comment.get()), eocd.commentLength);
+		eocd.comment.resize(eocd.commentLength);
+		in.read(reinterpret_cast<char *>(eocd.comment.data()), eocd.commentLength);
 	}
 	return in;
 }
@@ -40,33 +40,27 @@ std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 		std::cerr << "ERROR: CentralDirectoryFileHeader not found!\n";
 		//throw
 	}
-	in.read(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - sizeof(uint16_t) - 3 * sizeof(uint8_t *));
+	in.read(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - sizeof(cdfh.extraField) - sizeof(cdfh.fileComment) - sizeof(cdfh.filename));
 	if (cdfh.filenameLength) {
-		cdfh.filename = std::make_unique<uint8_t[]>(cdfh.filenameLength + 1);
-		in.read(reinterpret_cast<char *>(cdfh.filename.get()), cdfh.filenameLength);
+		cdfh.filename.resize(cdfh.filenameLength + 1);
+		in.read(reinterpret_cast<char *>(cdfh.filename.data()), cdfh.filenameLength);
 		cdfh.filename[cdfh.filenameLength] = 0;
 	}
 	if (cdfh.extraFieldLength) {
-		cdfh.totalExtraFieldRecord = 0;
 		uint32_t extrafield_offset = in.tellg();
-		std::unique_ptr<extraFieldRecord[]> tmp = std::make_unique<extraFieldRecord[]>(cdfh.extraFieldLength/(2 * sizeof(uint16_t)));
-		for (size_t offset = extrafield_offset; offset - extrafield_offset < cdfh.extraFieldLength; ++cdfh.totalExtraFieldRecord) {
+		for (size_t offset = extrafield_offset; offset - extrafield_offset < cdfh.extraFieldLength;) {
 			extraFieldRecord efr;
 			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
 			in.read(reinterpret_cast<char *>(&efr.size), sizeof(uint16_t));
-			efr.data = std::make_unique<uint8_t[]>(efr.size);
-			in.read(reinterpret_cast<char *>(efr.data.get()), efr.size);
+			efr.data.resize(efr.size);
+			in.read(reinterpret_cast<char *>(efr.data.data()), efr.size);
 			offset += 2 * sizeof(uint16_t) + efr.size;
-			tmp[cdfh.totalExtraFieldRecord] = std::move(efr);
-		}
-		cdfh.extraField = std::make_unique<extraFieldRecord[]>(cdfh.totalExtraFieldRecord);
-		for (int i = 0; i < cdfh.totalExtraFieldRecord; ++i) {
-			cdfh.extraField[i] = std::move(tmp[i]);
+			cdfh.extraField.push_back(std::move(efr));
 		}
 	}
 	if (cdfh.fileCommentLength) {
-		cdfh.fileComment = std::make_unique<uint8_t[]>(cdfh.fileCommentLength);
-		in.read(reinterpret_cast<char *>(cdfh.fileComment.get()), cdfh.fileCommentLength);
+		cdfh.fileComment.resize(cdfh.fileCommentLength);
+		in.read(reinterpret_cast<char *>(cdfh.fileComment.data()), cdfh.fileCommentLength);
 	}
 	return in;
 } 
@@ -89,28 +83,22 @@ std::ifstream& operator>>(std::ifstream& in, LocalFileHeader& lfh) {
 		std::cerr << "ERROR: LocalFileHeader not found!\n";
 		//throw
 	}
-	in.read(reinterpret_cast<char *>(&lfh), sizeof(lfh) - 2 * sizeof(uint8_t *) - sizeof(uint16_t));
+	in.read(reinterpret_cast<char *>(&lfh), sizeof(lfh) - sizeof(lfh.filename) - sizeof(lfh.extraField));
 	if (lfh.filenameLength) {
-		lfh.filename = std::make_unique<uint8_t[]>(lfh.filenameLength + 1);
-		in.read(reinterpret_cast<char *>(lfh.filename.get()), lfh.filenameLength);
+		lfh.filename.resize(lfh.filenameLength + 1);
+		in.read(reinterpret_cast<char *>(lfh.filename.data()), lfh.filenameLength);
 		lfh.filename[lfh.filenameLength] = 0;
 	}
 	if (lfh.extraFieldLength) {
-		lfh.totalExtraFieldRecord = 0;
 		uint32_t extrafield_offset = in.tellg();
-		std::unique_ptr<extraFieldRecord[]> tmp = std::make_unique<extraFieldRecord[]>(lfh.extraFieldLength/(2 * sizeof(uint16_t)));
-		for (size_t offset = extrafield_offset; offset - extrafield_offset < lfh.extraFieldLength; ++lfh.totalExtraFieldRecord) {
+		for (size_t offset = extrafield_offset; offset - extrafield_offset < lfh.extraFieldLength;) {
 			extraFieldRecord efr;
 			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
 			in.read(reinterpret_cast<char *>(&efr.size), sizeof(uint16_t));
-			efr.data = std::make_unique<uint8_t[]>(efr.size);
-			in.read(reinterpret_cast<char *>(efr.data.get()), efr.size);
+			efr.data.resize(efr.size);
+			in.read(reinterpret_cast<char *>(efr.data.data()), efr.size);
 			offset += 2 * sizeof(uint16_t) + efr.size;
-			tmp[lfh.totalExtraFieldRecord] = std::move(efr);
-		}
-		lfh.extraField = std::make_unique<extraFieldRecord[]>(lfh.totalExtraFieldRecord);
-		for (int i = 0; i < lfh.totalExtraFieldRecord; ++i) {
-			lfh.extraField[i] = std::move(tmp[i]);
+			lfh.extraField.push_back(std::move(efr));
 		}
 	}
 	return in;	
@@ -118,14 +106,14 @@ std::ifstream& operator>>(std::ifstream& in, LocalFileHeader& lfh) {
 
 void inflate_data(File& f) {
 	if (Z_DEFLATED == f.compressionMethod) {
-		std::unique_ptr<uint8_t[]> result = std::make_unique<uint8_t[]>(f.uncompressedSize);
+		std::vector<uint8_t> result(f.uncompressedSize);
 		z_stream zs;
 		std::memset(&zs, 0, sizeof(zs));
 		inflateInit2(&zs, -MAX_WBITS);
 		zs.avail_in = f.compressedSize;
-		zs.next_in = f.data.get();
+		zs.next_in = f.data.data();
 		zs.avail_out = f.uncompressedSize;
-		zs.next_out = result.get();
+		zs.next_out = result.data();
 		inflate(&zs, Z_FINISH);
 		inflateEnd(&zs);
 		f.data = std::move(result);
@@ -133,8 +121,8 @@ void inflate_data(File& f) {
 }
 
 std::ifstream& operator>>(std::ifstream& in, File& f) {
-	f.data = std::make_unique<uint8_t[]>(f.compressedSize);
-	in.read(reinterpret_cast<char *>(f.data.get()), f.compressedSize);
+	f.data.resize(f.compressedSize);
+	in.read(reinterpret_cast<char *>(f.data.data()), f.compressedSize);
 	return in;
 }
 
