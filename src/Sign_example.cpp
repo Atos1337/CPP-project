@@ -1,11 +1,14 @@
-#include "ZIP-file_signing.h"
+#include "ZIP_file_signing.h"
+#include <cassert>
 
 int main(int argc, char *argv[]) {
 	using ZIP_file_signing::ZIP_file;
 	if (argc > 1) {
 		ZIP_file z(argv[1]);
-		z.signing(argv[2]);
-		z.get_and_write_sertificate(argv[3]);
+		z.load_certificate(argv[2]);
+		z.signing();
+		bool result = z.check_sign();
+		assert(result);
 	}
 	return 0;
 }

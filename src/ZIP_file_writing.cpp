@@ -1,5 +1,5 @@
-#include "ZIP-file_writing.h"
-#include "ZIP-file_headers.h"
+#include "ZIP_file_writing.h"
+#include "ZIP_file_headers.h"
 #include "zlib.h"
 
 #include <cstring>
@@ -14,7 +14,7 @@
 namespace ZIP_file_writing{
 
 std::ofstream& operator<<(std::ofstream& out, EOCD& eocd) {
-	uint32_t signature = valid_signatures.EOCD;
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::EOCD);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
 	out.write(reinterpret_cast<char *>(&eocd), sizeof(eocd) - sizeof(uint8_t *));
 	if (eocd.commentLength) {
@@ -24,14 +24,18 @@ std::ofstream& operator<<(std::ofstream& out, EOCD& eocd) {
 }
 
 std::ofstream& operator<<(std::ofstream& out, CentralDirectoryFileHeader& cdfh) {
-	uint32_t signature = valid_signatures.CDFH;
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::CDFH);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - 3 * sizeof(uint8_t *));
+	out.write(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - 3 * sizeof(uint8_t *) - sizeof(uint16_t));
 	if (cdfh.filenameLength) {
 		out.write(reinterpret_cast<char *>(cdfh.filename.get()), cdfh.filenameLength);
 	}
-	if (cdfh.extraFieldLength) {
-		out.write(reinterpret_cast<char *>(cdfh.extraField.get()), cdfh.extraFieldLength);
+	if (cdfh.totalExtraFieldRecord) {
+		for (int i = 0; i < cdfh.totalExtraFieldRecord; ++i) {
+			auto &efr = cdfh.extraField[i];
+			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(uint8_t *));
+			out.write(reinterpret_cast<char *>(efr.data.get()), efr.size);
+		}
 	}
 	if (cdfh.fileCommentLength) {
 		out.write(reinterpret_cast<char *>(cdfh.fileComment.get()), cdfh.fileCommentLength);
@@ -40,21 +44,25 @@ std::ofstream& operator<<(std::ofstream& out, CentralDirectoryFileHeader& cdfh) 
 }
 
 std::ofstream& operator<<(std::ofstream& out, DataDescriptor& dd) {
-	uint32_t signature = valid_signatures.DD;
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::DD);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
 	out.write(reinterpret_cast<char *>(&dd), sizeof(dd));
 	return out;
 }
 
 std::ofstream& operator<<(std::ofstream& out, LocalFileHeader& lfh) {
-	uint32_t signature = valid_signatures.LFH;
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::LFH);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&lfh), sizeof(lfh) - 2 * sizeof(uint8_t *));
+	out.write(reinterpret_cast<char *>(&lfh), sizeof(lfh) - 2 * sizeof(uint8_t *) - sizeof(uint16_t));
 	if (lfh.filenameLength) {
 		out.write(reinterpret_cast<char *>(lfh.filename.get()), lfh.filenameLength);
 	}
-	if (lfh.extraFieldLength) {
-		out.write(reinterpret_cast<char *>(lfh.extraField.get()), lfh.extraFieldLength);
+	if (lfh.totalExtraFieldRecord) {
+		for (int i = 0; i < lfh.totalExtraFieldRecord; ++i) {
+			auto &efr = lfh.extraField[i];
+			out.write(reinterpret_cast<char *>(&efr), sizeof(efr) - sizeof(uint8_t *));
+			out.write(reinterpret_cast<char *>(efr.data.get()), efr.size);
+		}
 	}
 	return out;
 }
@@ -65,7 +73,7 @@ std::ofstream& operator<<(std::ofstream& out, File& f) {
 }
 
 void deflate_data(File& f) {
-	std::unique_ptr<uint8_t[]> data_buf(new uint8_t[f.uncompressedSize]);
+	std::unique_ptr<uint8_t[]> data_buf = std::make_unique<uint8_t[]>(f.uncompressedSize * 2 + 12);
 	z_stream zs;
 	std::memset(&zs, 0, sizeof(zs));
 	deflateInit2(
@@ -82,21 +90,20 @@ void deflate_data(File& f) {
 	deflate(&zs, Z_FINISH);
 	f.compressedSize = zs.total_out;
 	f.compressionMethod = Z_DEFLATED;
+	deflateEnd(&zs);
 	f.data = std::move(data_buf);
 }
 
-std::ofstream& operator<<(std::ofstream& out, const char *certificate) {
+uint16_t serialize(const char *certificate, uint8_t *&buf) {
 	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
 	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
-	uint8_t *buf = nullptr;
-	uint32_t size = 0;
+	buf = nullptr;
+	uint16_t size = 0;
 	BIO_ptr cert_bio(BIO_new(BIO_s_file()), BIO_free);
 	BIO_read_filename(cert_bio.get(), certificate);
 	X509_ptr x509(PEM_read_bio_X509_AUX(cert_bio.get(), NULL, 0, NULL), X509_free);
 	size = i2d_X509(x509.get(), &buf);
-	out.write(reinterpret_cast<char *>(&size), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(buf), size);
-	return out;
+	return size;
 }
 
 } //namespace ZIP_file_writing

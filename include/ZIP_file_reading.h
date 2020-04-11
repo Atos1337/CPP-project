@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "ZIP-file_headers.h"
+#include "ZIP_file_headers.h"
 #include "zlib.h"
 
 namespace ZIP_file_reading {

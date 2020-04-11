@@ -1,7 +1,7 @@
 #pragma once
 #pragma pack(1)
 
-#include "ZIP-file_headers.h"
+#include "ZIP_file_headers.h"
 
 #include <cstring>
 #include <cstdint>
@@ -19,7 +19,7 @@ std::ofstream& operator<<(std::ofstream& out, LocalFileHeader& lfh);
 
 std::ofstream& operator<<(std::ofstream& out, File& f);
 
-std::ofstream& operator<<(std::ofstream& out, const char *certificate);
+uint16_t serialize(const char *certificate, uint8_t *&buf);
 
 } //namespace ZIP_file_writing
 

@@ -4,12 +4,18 @@
 #include <cstdint>
 #include <memory>
 
-constexpr struct signatures {
-	uint32_t LFH = 0x04034b50,
+enum class valid_signatures : uint32_t {
+    LFH = 0x04034b50,
 	DD = 0x08074b50,
 	CDFH = 0x02014b50,
-	EOCD = 0x06054b50;
-} valid_signatures;
+	EOCD = 0x06054b50,
+};
+
+struct extraFieldRecord {
+    uint16_t signature;
+    uint16_t size;
+    std::unique_ptr<uint8_t[]> data;
+};
 
 struct LocalFileHeader {
     // Минимальная версия для распаковки
@@ -32,10 +38,12 @@ struct LocalFileHeader {
     uint16_t filenameLength;
     // Длина поля с дополнительными данными
     uint16_t extraFieldLength;
+    //Количество записей в доп.поле
+    uint16_t totalExtraFieldRecord;
     // Название файла (размером filenameLength)
     std::unique_ptr<uint8_t[]> filename;
     // Дополнительные данные (размером extraFieldLength)
-    std::unique_ptr<uint8_t[]> extraField;
+    std::unique_ptr<extraFieldRecord[]> extraField;
 };
 
 struct File {
@@ -87,10 +95,12 @@ struct CentralDirectoryFileHeader {
     uint32_t externalFileAttributes;
     // Смещение до структуры LocalFileHeader
     uint32_t localFileHeaderOffset;
+    // Количество записей в доп.поле
+    uint16_t totalExtraFieldRecord;
     // Имя файла (длиной filenameLength)
     std::unique_ptr<uint8_t[]> filename;
     // Дополнительные данные (длиной extraFieldLength)
-    std::unique_ptr<uint8_t[]> extraField;
+    std::unique_ptr<extraFieldRecord[]> extraField;
     // Комментарий к файла (длиной fileCommentLength)
     std::unique_ptr<uint8_t[]> fileComment;
 };

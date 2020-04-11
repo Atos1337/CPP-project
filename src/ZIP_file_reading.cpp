@@ -1,14 +1,17 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <ios>
 #include <memory>
+#include <cassert>
 #include "zlib.h"
 #include "openssl/bio.h"
 #include "openssl/pem.h"
 #include "openssl/x509.h"
 
-#include "ZIP-file_reading.h"
-#include "ZIP-file_headers.h"
+#include "ZIP_file_reading.h"
+#include "ZIP_file_headers.h"
+#include "ZIP_file_signing.h"
 
 namespace ZIP_file_reading{
 
@@ -19,7 +22,7 @@ std::ifstream& operator>>(std::ifstream& in, EOCD& eocd) {
 		uint32_t signature = 0;
 		in.seekg(offset, in.beg);
 		in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
-		if (signature == valid_signatures.EOCD) 
+		if (signature == static_cast<uint32_t>(valid_signatures::EOCD)) 
 			break;
 	}
 	in.read(reinterpret_cast<char *>(&eocd), sizeof(EOCD) - sizeof(uint8_t *));
@@ -33,23 +36,36 @@ std::ifstream& operator>>(std::ifstream& in, EOCD& eocd) {
 std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 	uint32_t signature = 0;
 	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
-	if (signature != valid_signatures.CDFH) {
+	if (signature != static_cast<uint32_t>(valid_signatures::CDFH)) {
 		std::cerr << "ERROR: CentralDirectoryFileHeader not found!\n";
 		//throw
 	}
-	in.read(reinterpret_cast<char *>(&cdfh), sizeof(CentralDirectoryFileHeader) - 3 * sizeof(uint8_t *));
+	in.read(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - sizeof(uint16_t) - 3 * sizeof(uint8_t *));
 	if (cdfh.filenameLength) {
-		cdfh.filename = std::unique_ptr<uint8_t[]>(new uint8_t[cdfh.filenameLength + 1]);
+		cdfh.filename = std::make_unique<uint8_t[]>(cdfh.filenameLength + 1);
 		in.read(reinterpret_cast<char *>(cdfh.filename.get()), cdfh.filenameLength);
 		cdfh.filename[cdfh.filenameLength] = 0;
 	}
-	
 	if (cdfh.extraFieldLength) {
-		cdfh.extraField = std::unique_ptr<uint8_t[]>(new uint8_t[cdfh.extraFieldLength]);
-		in.read(reinterpret_cast<char *>(cdfh.extraField.get()), cdfh.extraFieldLength);
+		cdfh.totalExtraFieldRecord = 0;
+		uint32_t extrafield_offset = in.tellg();
+		std::unique_ptr<extraFieldRecord[]> tmp = std::make_unique<extraFieldRecord[]>(cdfh.extraFieldLength/(2 * sizeof(uint16_t)));
+		for (size_t offset = extrafield_offset; offset - extrafield_offset < cdfh.extraFieldLength; ++cdfh.totalExtraFieldRecord) {
+			extraFieldRecord efr;
+			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
+			in.read(reinterpret_cast<char *>(&efr.size), sizeof(uint16_t));
+			efr.data = std::make_unique<uint8_t[]>(efr.size);
+			in.read(reinterpret_cast<char *>(efr.data.get()), efr.size);
+			offset += 2 * sizeof(uint16_t) + efr.size;
+			tmp[cdfh.totalExtraFieldRecord] = std::move(efr);
+		}
+		cdfh.extraField = std::make_unique<extraFieldRecord[]>(cdfh.totalExtraFieldRecord);
+		for (int i = 0; i < cdfh.totalExtraFieldRecord; ++i) {
+			cdfh.extraField[i] = std::move(tmp[i]);
+		}
 	}
 	if (cdfh.fileCommentLength) {
-		cdfh.fileComment = std::unique_ptr<uint8_t[]>(new uint8_t[cdfh.fileCommentLength]);
+		cdfh.fileComment = std::make_unique<uint8_t[]>(cdfh.fileCommentLength);
 		in.read(reinterpret_cast<char *>(cdfh.fileComment.get()), cdfh.fileCommentLength);
 	}
 	return in;
@@ -58,37 +74,51 @@ std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 std::ifstream& operator>>(std::ifstream& in, DataDescriptor& dd) {
 	uint32_t signature = 0;
 	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
-	if (signature != valid_signatures.DD) {
+	if (signature != static_cast<uint32_t>(valid_signatures::DD)) {
 		std::cerr << "ERROR: DataDescriptor not found!\n";
 		//throw
 	}
-	in.read(reinterpret_cast<char *>(&dd), sizeof(DataDescriptor));
+	in.read(reinterpret_cast<char *>(&dd), sizeof(dd));
 	return in;
 }
 
 std::ifstream& operator>>(std::ifstream& in, LocalFileHeader& lfh) {
 	uint32_t signature = 0;
 	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
-	if (signature != valid_signatures.LFH) {
+	if (signature != static_cast<uint32_t>(valid_signatures::LFH)) {
 		std::cerr << "ERROR: LocalFileHeader not found!\n";
 		//throw
 	}
-	in.read(reinterpret_cast<char *>(&lfh), sizeof(LocalFileHeader) - 2 * sizeof(uint8_t *));
+	in.read(reinterpret_cast<char *>(&lfh), sizeof(lfh) - 2 * sizeof(uint8_t *) - sizeof(uint16_t));
 	if (lfh.filenameLength) {
-		lfh.filename = std::unique_ptr<uint8_t[]>(new uint8_t[lfh.filenameLength + 1]);
+		lfh.filename = std::make_unique<uint8_t[]>(lfh.filenameLength + 1);
 		in.read(reinterpret_cast<char *>(lfh.filename.get()), lfh.filenameLength);
 		lfh.filename[lfh.filenameLength] = 0;
 	}
 	if (lfh.extraFieldLength) {
-		lfh.extraField = std::unique_ptr<uint8_t[]>(new uint8_t[lfh.extraFieldLength]);
-		in.read(reinterpret_cast<char *>(lfh.extraField.get()), lfh.extraFieldLength);
+		lfh.totalExtraFieldRecord = 0;
+		uint32_t extrafield_offset = in.tellg();
+		std::unique_ptr<extraFieldRecord[]> tmp = std::make_unique<extraFieldRecord[]>(lfh.extraFieldLength/(2 * sizeof(uint16_t)));
+		for (size_t offset = extrafield_offset; offset - extrafield_offset < lfh.extraFieldLength; ++lfh.totalExtraFieldRecord) {
+			extraFieldRecord efr;
+			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
+			in.read(reinterpret_cast<char *>(&efr.size), sizeof(uint16_t));
+			efr.data = std::make_unique<uint8_t[]>(efr.size);
+			in.read(reinterpret_cast<char *>(efr.data.get()), efr.size);
+			offset += 2 * sizeof(uint16_t) + efr.size;
+			tmp[lfh.totalExtraFieldRecord] = std::move(efr);
+		}
+		lfh.extraField = std::make_unique<extraFieldRecord[]>(lfh.totalExtraFieldRecord);
+		for (int i = 0; i < lfh.totalExtraFieldRecord; ++i) {
+			lfh.extraField[i] = std::move(tmp[i]);
+		}
 	}
 	return in;	
 }
 
 void inflate_data(File& f) {
 	if (Z_DEFLATED == f.compressionMethod) {
-		std::unique_ptr<uint8_t[]> result (new uint8_t[f.uncompressedSize]);
+		std::unique_ptr<uint8_t[]> result = std::make_unique<uint8_t[]>(f.uncompressedSize);
 		z_stream zs;
 		std::memset(&zs, 0, sizeof(zs));
 		inflateInit2(&zs, -MAX_WBITS);
@@ -103,17 +133,16 @@ void inflate_data(File& f) {
 }
 
 std::ifstream& operator>>(std::ifstream& in, File& f) {
-	std::unique_ptr<uint8_t[]> read_buf(new uint8_t[f.compressedSize]);
-	in.read(reinterpret_cast<char *>(read_buf.get()), f.compressedSize);
-	f.data = std::move(read_buf);
+	f.data = std::make_unique<uint8_t[]>(f.compressedSize);
+	in.read(reinterpret_cast<char *>(f.data.get()), f.compressedSize);
 	return in;
 }
 
 std::ifstream& operator>>(std::ifstream& in, std::ofstream& out) {
 	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
 	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
-	uint32_t size;
-	in.read(reinterpret_cast<char *>(&size), sizeof(uint32_t));
+	uint16_t size;
+	in.read(reinterpret_cast<char *>(&size), sizeof(uint16_t));
 	uint8_t *buf = new uint8_t[size];
 	in.read(reinterpret_cast<char *>(buf), size);
 	X509_ptr x509(d2i_X509(NULL, const_cast<const uint8_t **>(&buf), size), X509_free);
