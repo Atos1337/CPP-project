@@ -6,7 +6,7 @@
 std::vector<uint8_t> test_sign(File &f) {
 	static_cast<void>(f);
 	std::vector<uint8_t> res = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!', 0};
-	return res;
+	return std::move(res);
 }
 
 bool ch_sign(File &f, const std::vector<uint8_t> &sign) {

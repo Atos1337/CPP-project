@@ -24,7 +24,7 @@ namespace ZIP_file_signing {
 			in >> cdfh;
 			filenames.push_back(cdfh.filename);
 		}
-		return filenames;
+		return std::move(filenames);
 	}
 
 	void ZIP_file::signing() {
@@ -91,12 +91,7 @@ namespace ZIP_file_signing {
 			f = {std::vector<uint8_t>(0), lfh.compressionMethod, lfh.compressedSize, lfh.uncompressedSize};
 			in >> f;
 			inflate_data(f);
-			std::vector<uint8_t> sign;
-			for (auto &efr : lfh.extraField)
-				if (efr.signature == 0x0015) {
-					sign = efr.data;
-					break;
-				}
+			std::vector<uint8_t> sign = get_signature(lfh);
 			is_correct &= ch_sign(f, sign);
 		}
 		return is_correct;
@@ -147,7 +142,7 @@ namespace ZIP_file_signing {
 		std::experimental::filesystem::rename("tmp.zip", arch.c_str());
 	}
 
-	/*std::vector<uint8_t> ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) {
+	std::vector<uint8_t> ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) {
 		std::vector<uint8_t> certificate;
 		for (auto &efr : cdfh.extraField) {
 			if (efr.signature == 0x0014) {
@@ -167,5 +162,5 @@ namespace ZIP_file_signing {
 			}
 		}
 		return std::move(signature);
-	}*/
+	}
 } //namespace ZIP_file_signing

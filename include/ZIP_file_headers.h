@@ -1,5 +1,5 @@
 #pragma once
-#pragma pack(1)
+#pragma pack(push, 1)
 
 #include <cstdint>
 #include <memory>
@@ -120,3 +120,4 @@ struct EOCD {
     // Комментарий (длиной commentLength)
     std::vector<uint8_t> comment;
 };
+#pragma pack(pop)
