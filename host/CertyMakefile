@@ -3,11 +3,11 @@ all: obj/signer.o
 example: obj/signer.o obj/example.o | obj
 	g++ -Wall -Wextra obj/signer.o obj/example.o -o example -lssl -lcrypto
 
-obj/example.o: example.cpp | obj
-	g++ -std=c++17 -c -Wall -Wextra  example.cpp -o obj/example.o -lssl -lcrypto
+obj/example.o: src/example.cpp | obj
+	g++ -Iinclude -std=c++17 -c -Wall -Wextra  src/example.cpp -o obj/example.o -lssl -lcrypto
 
-obj/signer.o: signer.cpp signer.h | obj
-	g++ -std=c++17 -c -Wall -Wextra  signer.cpp -o obj/signer.o -lssl -lcrypto
+obj/signer.o: src/signer.cpp | obj
+	g++ -Iinclude -std=c++17 -c -Wall -Wextra  src/signer.cpp -o obj/signer.o -lssl -lcrypto
 
 obj:
 	mkdir -p obj

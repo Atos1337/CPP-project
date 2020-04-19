@@ -5,7 +5,7 @@ public:
 	Signer();
 	~Signer();
 	std::string signMessage(std::string privateKey, std::string plainText);
-	bool verifySignature(std::string publicKey, std::string plainText, std::string signatureBase64);
+	bool verifySignature(X509* certificate, std::string plainText, std::string signatureBase64);
 private:
 	RSA* createPrivateRSA(std::string key);
 	RSA* createPublicRSA(std::string key);
@@ -25,5 +25,5 @@ private:
                    char** base64Text);
 	size_t calcDecodeLength(const char* b64input);
 	void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length);
-	
+    std::string extractPublicKey(X509 *certificate);
 };

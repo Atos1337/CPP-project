@@ -47,7 +47,7 @@ std::string extract_private(std::string filename){
 std::string extract_public(std::string filename){
     BIO* bio = BIO_new(BIO_s_mem());
     char* buffer;
-    PEM_write_bio_PUBKEY(bio , X509_get_pubkey(getPubKey(filename)));
+    PEM_write_bio_PUBKEY(bio, X509_get_pubkey(getPubKey(filename)));
     size_t bioLength = BIO_pending(bio);
     buffer = (char*)malloc(bioLength+1);
     BIO_read(bio, buffer, bioLength);

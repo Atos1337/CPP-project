@@ -162,7 +162,20 @@ std::string Signer::signMessage(std::string privateKey, std::string plainText) {
     return s;
 }
 
-bool Signer::verifySignature(std::string publicKey, std::string plainText, std::string signatureBase64) {
+std::string Signer::extractPublicKey(X509* certificate) {
+    BIO* bio = BIO_new(BIO_s_mem());
+    char* buffer;
+    PEM_write_bio_PUBKEY(bio, X509_get_pubkey(certificate));
+    size_t bioLength = BIO_pending(bio);
+    buffer = (char*)malloc(bioLength + 1);
+    BIO_read(bio, buffer, bioLength);
+    buffer[bioLength] = '\0';
+    std::string s(buffer);
+    return s;
+}
+
+bool Signer::verifySignature(X509* certificate, std::string plainText, std::string signatureBase64) {
+    std::string publicKey = extractPublicKey(certificate);
     RSA* publicRSA = createPublicRSA(publicKey);
     unsigned char* encMessage;
     size_t encMessageLength;
