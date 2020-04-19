@@ -1,20 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <openssl/aes.h>
-#include <openssl/evp.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/engine.h>
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <assert.h>
-#include "openssl/asn1.h"
-#include "openssl/conf.h"
-#include "openssl/err.h"
-#include "openssl/x509.h"
-#include <memory>
-#include <sstream>
 #include "signer.h"
 
 using BIO_ptr  = std::unique_ptr<BIO, decltype(&BIO_free)>;
