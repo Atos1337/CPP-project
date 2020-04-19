@@ -9,7 +9,7 @@ bool ZipSigner::verify(X509* certificate,
                        const std::vector<uint8_t> &bytes,
                        const std::vector<uint8_t> &signature) {
     assert(certificate);
-    return verifySignature(certificate,
+    return signer.verifySignature(certificate,
                            std::string(bytes.cbegin(), bytes.cend()),
                            std::string(signature.cbegin(), signature.cend()));
 }
