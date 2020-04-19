@@ -1,0 +1,29 @@
+{
+    "manifest_version": 2,
+    "minimum_chrome_version": "29",
+    
+    "name": "Crypto plugin",
+    "version": "0.1",
+    "description": "Native messaging test",
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
+    
+    "permissions": [
+        "nativeMessaging",
+        "storage",
+        "tabs",
+        "activeTab",
+        "background",
+        "http://*/", "https://*/",
+        "downloads"
+        ],
+    "background": {
+        "scripts": ["js/background.js"]
+    },
+    "browser_action": {
+        "default_icon": "icon.png",
+        "default_popup": "popup.html"
+    }
+}
