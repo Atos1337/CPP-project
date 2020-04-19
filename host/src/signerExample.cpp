@@ -73,11 +73,11 @@ int main(int argc, char** argv) {
     std::cout<<publicKey<<"\n";
     std::string plainText = "214124apjhsdfoiquh3487y1fhlsdf\n";
     std::string signature = signer.signMessage(privateKey, plainText);
-    bool authentic = signer.verifySignature(publicKey, "214124apjhsdfoiquh3487y1fhlsdf\n", signature);
-    if ( authentic ) {
-        std::cout << "Authentic" << std::endl;
-    } 
-    else {
-        std::cout << "Not Authentic" << std::endl;
-    }
+    //bool authentic = signer.verifySignature(publicKey, "214124apjhsdfoiquh3487y1fhlsdf\n", signature);
+    // if ( authentic ) {
+    //     std::cout << "Authentic" << std::endl;
+    // } 
+    // else {
+    //     std::cout << "Not Authentic" << std::endl;
+    // }
 }

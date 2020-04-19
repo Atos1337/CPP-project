@@ -17,11 +17,13 @@ add_executable(host
         include/ZIP_file_writing.h
         include/zipSigner.hpp
         src/Native-messaging-host.cpp
-        src/Sign_example.cpp
         src/signer.cpp
-        src/signerExample.cpp
         src/Test_function_for_sign.cpp
         src/ZIP_file_reading.cpp
         src/ZIP_file_signing.cpp
         src/ZIP_file_writing.cpp
         src/zipSigner.cpp)
+
+set_property(TARGET host PROPERTY CXX_STANDARD 17)
+find_package(OpenSSL REQUIRED)
+target_link_libraries(host OpenSSL::SSL)
