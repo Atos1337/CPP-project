@@ -44,7 +44,7 @@ void sendMessage(const json &json_msg) {
 namespace {
 
 std::optional<std::string> openZip() {
-    auto f = pfd::open_file("Choose files to read", DEFAULT_PATH,
+    auto f = pfd::open_file("Choose files to read", "/home/peter/Study/HSE/CPP-project/host",
                         { "Zip Files (.zip)", "*.zip",
                           "All Files", "*" },
                         true);
@@ -60,7 +60,7 @@ int main(){
     
     while (true) {
         json msg = message::getMessage();
-        std::cerr << msg.dump() << std::endl;
+        //std::cerr << msg.dump() << std::endl;
         if (msg["request"] == "Check certificate in file" ||
                 msg["request"] == "Open and check certificate") {
 
@@ -83,6 +83,7 @@ int main(){
                 ZipSigner zipSigner;
                 ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
                 j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
+                j["ArchiveFiles"] = zip_file.get_filenames();
             }
             //string part1 = 
             // auto part2 = (R"({"Verified": "OK",
@@ -101,10 +102,15 @@ int main(){
             }
             else {
                 j["ArchiveName"] = *filepath;
-                j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
                 ZipSigner zipSigner(msg["privateKey"]);
-                ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
+                ZIP_file_signing::ZIP_file zip_file((*filepath).c_str(), zipSigner);
+                std::cerr << *filepath << std::endl;
+                //zip_file.load_certificate(msg["certificate"]);
+                zip_file.load_certificate("/home/peter/Study/HSE/CPP-project/samples/a.crt");
+                // assert(false);
                 zip_file.signing();
+
+                j["ArchiveFiles"] = zip_file.get_filenames(); 
             }
             message::sendMessage(j);
         }

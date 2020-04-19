@@ -140,12 +140,18 @@ namespace ZIP_file_signing {
 			}
 			out << cdfh;
 		}
+		std::cerr << "a";
 		out << eocd;
+		std::cerr << "b";
 		in.close();
-		std::experimental::filesystem::remove(arch.c_str());
-		out << eocd;
+		// std::experimental::filesystem::remove(arch.c_str());
+		//remove(arch.c_str());
+		std::cerr << "c";
 		out.close();
-		std::experimental::filesystem::rename("tmp.zip", arch.c_str());
+		std::cerr << "d";
+		std::experimental::filesystem::rename("tmp.zip", "test.zip");
+		arch = "test.zip";
+		std::cerr << "e";
 	}
 
 	auto ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) -> X509_ptr {

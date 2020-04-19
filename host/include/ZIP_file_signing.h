@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <stdio.h>
 #include "ZIP_file_headers.h"
 #include "openssl/x509.h"
 #include "zipSigner.hpp"
