@@ -12,7 +12,7 @@ namespace ZIP_file_signing {
 	using namespace ZIP_file_reading;
 	using namespace ZIP_file_writing;
 
-	ZIP_file::ZIP_file(const char *filename) : arch(filename) {}
+	ZIP_file::ZIP_file(const char *filename, ZipSigner &signer_) : arch(filename), signer(signer_) {}
 
 	std::vector<std::vector<uint8_t>> ZIP_file::get_filenames() {
 		std::ifstream in(arch.c_str(), std::ios::binary);
