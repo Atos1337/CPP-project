@@ -7,9 +7,9 @@
 class ZipSigner {
 private:
     std::string privateKey;
-    Signer signer;
+    Signer& signer;
 public:
-    ZipSigner(const std::string& privateKey_) : privateKey(privateKey_) {}
+    ZipSigner(const std::string& privateKey_, Signer& signer_) : privateKey(privateKey_), signer(signer_) {}
 
     std::vector<uint8_t> sign(const std::vector<uint8_t> &bytes);
 
