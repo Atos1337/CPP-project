@@ -1,9 +1,11 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 
 #include "ZIP_file_headers.h"
 #include "zlib.h"
+#include "openssl/x509.h"
 
 namespace ZIP_file_reading {
 
@@ -19,6 +21,8 @@ void inflate_data(File& f);
 
 std::ifstream& operator>>(std::ifstream& in, File& f);
 
-std::ifstream& operator>>(std::ifstream& in, std::ofstream& out);
+using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
+
+auto deserialize(std::vector<uint8_t>& certificate) -> X509_ptr;
 
 } //namespace ZIP_file_reading
