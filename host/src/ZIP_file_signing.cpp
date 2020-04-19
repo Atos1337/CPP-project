@@ -50,7 +50,7 @@ namespace ZIP_file_signing {
 			in.read(reinterpret_cast<char *>(tmp.data()), lfh.compressedSize);
 			f = {tmp, lfh.compressionMethod, lfh.compressedSize, lfh.uncompressedSize};
 			inflate_data(f);
-			std::vector<uint8_t> sign = test_sign(f);
+			std::vector<uint8_t> sign = signer.sign(f.data);
 			f.data = std::move(tmp);
 			extraFieldRecord efr = {0x0015, static_cast<uint16_t>(sign.size()), std::move(sign)};
 			lfh.extraFieldLength += 2 * sizeof(uint16_t) + efr.size;
@@ -98,7 +98,7 @@ namespace ZIP_file_signing {
 			in >> f;
 			inflate_data(f);
 			std::vector<uint8_t> sign = get_signature(lfh);
-			is_correct &= ch_sign(f, sign, certificate.get());
+			is_correct &= signer.verify(certificate.get(), f.data, sign);
 		}
 		return is_correct;
 	}
