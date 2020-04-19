@@ -27,3 +27,6 @@ add_executable(host
 set_property(TARGET host PROPERTY CXX_STANDARD 17)
 find_package(OpenSSL REQUIRED)
 target_link_libraries(host OpenSSL::SSL)
+find_package(ZLIB)
+target_link_libraries(host ZLIB::ZLIB)
+target_link_libraries(host stdc++fs)
