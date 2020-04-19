@@ -84,6 +84,24 @@ int main(){
             //     "ArchiveFiles" : ["1.txt", "2.txt"]})"_json);
             message::sendMessage(j);
         }
+        else if (msg["request"] == "Open and sign certificate") {
+            std::optional<std::string> filepath = openZip();
+            json j;
+            if (!filepath) {
+                j["Error"] = "No file found";
+                
+            }
+            else if (msg.find("privateKey") == msg.end() || msg["privateKey"].size() == 0) {
+                j["Error"] = "No private key found";
+            }
+            else {
+                j["Verified"] = "OK";
+                j["ArchiveName"] = *filepath;
+                j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
+                j["Key"] = msg["privateKey"];
+            }
+            message::sendMessage(j);
+        }
     }
     return 0;
 }
