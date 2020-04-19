@@ -4,6 +4,11 @@ document.addEventListener('DOMContentLoaded', function () {
             chrome.runtime.sendMessage({message: "openAndCheck"}, (response) => {});
           }
         );
+  document.getElementById('signCerty').addEventListener(
+        'click', () => {
+            chrome.runtime.sendMessage({message: "openAndSign"}, (response) => {});
+          }
+        );
 }); 
 
 //

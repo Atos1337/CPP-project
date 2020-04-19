@@ -25,9 +25,21 @@ function openAndCheckCertificate() {
     port.postMessage({"request" : "Open and check certificate"});
 }
 
+function openAndSignCertificate() {
+    chrome.storage.sync.get({
+        privateKey: "",
+    }, function(items) {
+        port.postMessage({"request" : "Open and sign certificate", "privateKey" : items.privateKey});
+    });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.message === "openAndCheck") {
       openAndCheckCertificate();
       sendResponse({message: "OK"});
+    }
+    else if (request.message === "openAndSign") {
+        openAndSignCertificate();
+        sendResponse({message: "OK"});
     }
 });
