@@ -9,7 +9,7 @@ private:
     std::string privateKey;
     Signer signer;
 public:
-    ZipSigner(string privateKey_) : privateKey(privateKey_) {}
+    ZipSigner(const std::string& privateKey_) : privateKey(privateKey_) {}
 
     std::vector<uint8_t> sign(const std::vector<uint8_t> &bytes);
 
