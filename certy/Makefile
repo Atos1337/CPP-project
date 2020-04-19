@@ -1,17 +1,16 @@
-all: obj print_cert ssign
+all: obj/signer.o
 
-print_cert:obj/main.o 
-	g++ -Wall -Wextra obj/main.o -o print_cert -lssl -lcrypto
+example: obj/signer.o obj/example.o | obj
+	g++ -Wall -Wextra obj/signer.o obj/example.o -o example -lssl -lcrypto
 
-ssign:obj/signer.o
-	g++ -Wall -Wextra obj/signer.o -o ssign -lssl -lcrypto
-obj/main.o:main.cpp 
-	g++ -std=c++17 -c -Wall -Wextra  main.cpp -o obj/main.o -lssl -lcrypto
+obj/example.o: example.cpp | obj
+	g++ -std=c++17 -c -Wall -Wextra  example.cpp -o obj/example.o -lssl -lcrypto
 
-obj/signer.o:signer.cpp signer.h
+obj/signer.o: signer.cpp signer.h | obj
 	g++ -std=c++17 -c -Wall -Wextra  signer.cpp -o obj/signer.o -lssl -lcrypto
+
 obj:
 	mkdir -p obj
 
 clean:
-	rm -rf obj print_cert ssign
+	rm -rf obj example

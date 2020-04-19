@@ -27,8 +27,3 @@ private:
 	void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length);
 	
 };
-
-char* readFileBytes(const char *name);
-X509* getPubKey(std::string filename);
-std::string extract_private(std::string filename);
-std::string extract_public(std::string filename);
