@@ -3,6 +3,9 @@
 #include <optional>
 #include <json.hpp>
 #include "portable-file-dialogs.h"
+#include "ZIP_file_signing.h"
+#include "zipSigner.hpp"
+
 using json = nlohmann::json;
 
 #if _WIN32
@@ -75,9 +78,11 @@ int main(){
                 j["Error"] = "No file found";
             }
             else {
-                j["Verified"] = "OK";
                 j["ArchiveName"] = *filepath;
-                j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
+                //j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
+                ZipSigner zipSigner;
+                ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
+                j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
             }
             //string part1 = 
             // auto part2 = (R"({"Verified": "OK",
@@ -95,10 +100,11 @@ int main(){
                 j["Error"] = "No private key found";
             }
             else {
-                j["Verified"] = "OK";
                 j["ArchiveName"] = *filepath;
                 j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
-                j["Key"] = msg["privateKey"];
+                ZipSigner zipSigner(msg["privateKey"]);
+                ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
+                zip_file.signing();
             }
             message::sendMessage(j);
         }
