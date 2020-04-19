@@ -10,7 +10,7 @@ Native-messaging-host: obj/Native-messaging-host.o
 obj: 
 	mkdir obj
 
-obj/Native-messaging-host.o: src/Native-messaging-host.cpp | obj
+obj/Native-messaging-host.o: src/Native-messaging-host.cpp include/portable-file-dialogs.h | obj
 	g++ $(CXXFLAGS) src/Native-messaging-host.cpp -o obj/Native-messaging-host.o
 
 clean:
