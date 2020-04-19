@@ -28,8 +28,9 @@ function openAndCheckCertificate() {
 function openAndSignCertificate() {
     chrome.storage.sync.get({
         privateKey: "",
+        certificate: "",
     }, function(items) {
-        port.postMessage({"request" : "Open and sign certificate", "privateKey" : items.privateKey});
+        port.postMessage({"request" : "Open and sign certificate", "privateKey" : items.privateKey, "certificate" : items.certificate});
     });
 }
 
