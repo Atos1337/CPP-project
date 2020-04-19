@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "ZIP_file_headers.h"
+#include "openssl/x509.h"
 
 namespace ZIP_file_signing{
 
@@ -13,7 +14,8 @@ public:
 	void load_certificate(const char *certificate);
 	std::vector<std::vector<uint8_t>> get_filenames();
 private:
-	std::vector<uint8_t> get_certificate(const CentralDirectoryFileHeader &cdfh);
+	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
+	X509_ptr get_certificate(const CentralDirectoryFileHeader &cdfh);
 	std::vector<uint8_t> get_signature(const LocalFileHeader &lfh);
 	std::string arch;
 };

@@ -2,6 +2,7 @@
 #include "ZIP_file_reading.h"
 #include "ZIP_file_writing.h"
 #include "Test_function_for_sign.h"
+#include "openssl/x509.h"
 
 #include <iostream>
 #include <experimental/filesystem>
@@ -72,15 +73,20 @@ namespace ZIP_file_signing {
 	}
 
 	bool ZIP_file::check_sign() {
+		using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
 		bool is_correct = true;
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		EOCD eocd;
 		in >> eocd;
 		std::vector<uint32_t> lfh_offsets(eocd.totalCentralDirectoryRecord);
 		in.seekg(eocd.centralDirectoryOffset, in.beg);
+		X509_ptr certificate(nullptr, X509_free);
 		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
 			in >> cdfh;
+			if (i == 0) {
+				certificate = std::move(get_certificate(cdfh));
+			}
 			lfh_offsets[i] = cdfh.localFileHeaderOffset;
 		}
 		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
@@ -92,7 +98,7 @@ namespace ZIP_file_signing {
 			in >> f;
 			inflate_data(f);
 			std::vector<uint8_t> sign = get_signature(lfh);
-			is_correct &= ch_sign(f, sign);
+			is_correct &= ch_sign(f, sign, certificate.get());
 		}
 		return is_correct;
 	}
@@ -142,7 +148,7 @@ namespace ZIP_file_signing {
 		std::experimental::filesystem::rename("tmp.zip", arch.c_str());
 	}
 
-	std::vector<uint8_t> ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) {
+	auto ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) -> X509_ptr {
 		std::vector<uint8_t> certificate;
 		for (auto &efr : cdfh.extraField) {
 			if (efr.signature == 0x0014) {
@@ -150,7 +156,7 @@ namespace ZIP_file_signing {
 				break;
 			}
 		}
-		return std::move(certificate);
+		return std::move(deserialize(certificate));
 	}
 
 	std::vector<uint8_t> ZIP_file::get_signature(const LocalFileHeader &lfh) {
