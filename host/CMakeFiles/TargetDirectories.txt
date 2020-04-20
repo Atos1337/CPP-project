@@ -1,0 +1,3 @@
+/home/marvel1337/Git/CPP-project/host/CMakeFiles/rebuild_cache.dir
+/home/marvel1337/Git/CPP-project/host/CMakeFiles/Native-messaging-host.dir
+/home/marvel1337/Git/CPP-project/host/CMakeFiles/edit_cache.dir
