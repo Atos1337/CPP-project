@@ -54,6 +54,14 @@ std::optional<std::string> openZip() {
     return f.result()[0];
 }
 
+std::vector<std::string> bytesToNames(const std::vector<std::vector<uint8_t>> &v) {
+    std::vector<std::string> res;
+    for (auto &i : v) {
+        res.push_back(std::string(v.cbegin(), v.cend()));
+    }
+    return res;
+}
+
 }
 
 int main(){
@@ -83,7 +91,7 @@ int main(){
                 ZipSigner zipSigner;
                 ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
                 j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
-                j["ArchiveFiles"] = zip_file.get_filenames();
+                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
             }
             //string part1 = 
             // auto part2 = (R"({"Verified": "OK",
@@ -104,10 +112,10 @@ int main(){
                 j["ArchiveName"] = *filepath;
                 ZipSigner zipSigner(msg["privateKey"]);
                 ZIP_file_signing::ZIP_file zip_file((*filepath).c_str(), zipSigner);
-                std::cerr << *filepath << std::endl;
+                std::cerr << msg["certificate"] << std::endl;
                 zip_file.load_certificate_and_signing(msg["certificate"]);
 
-                j["ArchiveFiles"] = zip_file.get_filenames(); 
+                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames()); 
             }
             message::sendMessage(j);
         }
