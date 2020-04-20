@@ -141,6 +141,7 @@ namespace ZIP_file_signing {
 			f = {tmp, lfh.compressionMethod, lfh.compressedSize, lfh.uncompressedSize};
 			inflate_data(f);
 			std::vector<uint8_t> sign = signer.sign(f.data);
+			std::cerr << sign.size() << '\n';
 			f.data = std::move(tmp);
 			extraFieldRecord efr = {0x0015, static_cast<uint16_t>(sign.size()), std::move(sign)};
 			lfh.extraFieldLength += 2 * sizeof(uint16_t) + efr.size;
@@ -155,6 +156,7 @@ namespace ZIP_file_signing {
 			if (i == 0) {
 				uint8_t *buf = nullptr;
 				uint16_t size = serialize(certificate, buf);
+				std::cerr << size << '\n';
 				cdfh.extraFieldLength += 2 * sizeof(uint16_t) + size;;
 				eocd.sizeOfCentralDirectory += 2 * sizeof(uint16_t) + size;
 				extraFieldRecord efr = {0x0014, size, std::vector<uint8_t>(size)};
@@ -166,6 +168,7 @@ namespace ZIP_file_signing {
 		out << eocd;
 		in.close();
 		out.close();
+		arch = test;
 	}
 
 	auto ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) -> X509_ptr {
