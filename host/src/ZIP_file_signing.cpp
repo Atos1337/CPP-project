@@ -39,7 +39,7 @@ namespace ZIP_file_signing {
 		return std::move(filenames);
 	}
 
-	void ZIP_file::signing() {
+	/*void ZIP_file::signing() {
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		std::string tmp = get_result_name(arch);
 		tmp += "tmp.zip";
@@ -83,7 +83,7 @@ namespace ZIP_file_signing {
 		out << eocd;
 		out.close();
 		std::experimental::filesystem::rename(tmp.c_str(), arch.c_str());
-	}
+	}*/
 
 	bool ZIP_file::check_sign() {
 		using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
@@ -116,7 +116,7 @@ namespace ZIP_file_signing {
 		return is_correct;
 	}
 
-	void ZIP_file::load_certificate(const std::string& certificate) {
+	void ZIP_file::load_certificate_and_signing(const std::string& certificate) {
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		std::string tmp = get_result_name(arch);
 		tmp += "result.zip";
@@ -136,10 +136,18 @@ namespace ZIP_file_signing {
 			LocalFileHeader lfh;
 			File f;
 			in >> lfh;
-			f = {std::vector<uint8_t>(0), lfh.compressionMethod, lfh.compressedSize, lfh.uncompressedSize};
-			in >> f;
+			std::vector<uint8_t> tmp(lfh.compressedSize);
+			in.read(reinterpret_cast<char *>(tmp.data()), lfh.compressedSize);
+			f = {tmp, lfh.compressionMethod, lfh.compressedSize, lfh.uncompressedSize};
+			inflate_data(f);
+			std::vector<uint8_t> sign = signer.sign(f.data);
+			f.data = std::move(tmp);
+			extraFieldRecord efr = {0x0015, static_cast<uint16_t>(sign.size()), std::move(sign)};
+			lfh.extraFieldLength += 2 * sizeof(uint16_t) + efr.size;
+			lfh.extraField.push_back(std::move(efr));
 			out << lfh << f;
 		}
+		in.seekg(eocd.centralDirectoryOffset, in.beg);
 		eocd.centralDirectoryOffset = out.tellp();
 		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
@@ -158,7 +166,6 @@ namespace ZIP_file_signing {
 		out << eocd;
 		in.close();
 		out.close();
-		arch = tmp;
 	}
 
 	auto ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) -> X509_ptr {

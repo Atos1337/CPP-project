@@ -11,9 +11,9 @@ namespace ZIP_file_signing{
 class ZIP_file{
 public:
 	ZIP_file(const char *filename, ZipSigner &signer_);
-	void signing();
+	//void signing();
 	bool check_sign();
-	void load_certificate(const std::string& certificate);
+	void load_certificate_and_signing(const std::string& certificate);
 	std::vector<std::vector<uint8_t>> get_filenames();
 private:
 	std::string get_result_name(std::string& arch);
