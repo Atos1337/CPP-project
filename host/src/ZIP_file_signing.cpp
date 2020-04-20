@@ -14,7 +14,7 @@ namespace ZIP_file_signing {
 
 	ZIP_file::ZIP_file(const char *filename, ZipSigner &signer_) : arch(filename), signer(signer_) {}
 
-	std::string	ZIP_file::get_result_name(std::string& arch) {
+	std::string	ZIP_file::get_result_name(const std::string& arch) {
 		arch.reverse();
 		size_t found = arch.find("/");
 		arch.reverse();
