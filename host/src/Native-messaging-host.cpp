@@ -105,10 +105,7 @@ int main(){
                 ZipSigner zipSigner(msg["privateKey"]);
                 ZIP_file_signing::ZIP_file zip_file((*filepath).c_str(), zipSigner);
                 std::cerr << *filepath << std::endl;
-                //zip_file.load_certificate(msg["certificate"]);
-                zip_file.load_certificate("/home/peter/Study/HSE/CPP-project/samples/a.crt");
-                // assert(false);
-                zip_file.signing();
+                zip_file.load_certificate_and_signing(msg["certificate"]);
 
                 j["ArchiveFiles"] = zip_file.get_filenames(); 
             }
