@@ -163,6 +163,7 @@ namespace ZIP_file_signing {
 				memcpy(efr.data.data(), buf, size);
 				cdfh.extraField.push_back(std::move(efr));
 			}
+			cdfh.localFileHeaderOffset = lfh_offsets[i];
 			out << cdfh;
 		}
 		out << eocd;
