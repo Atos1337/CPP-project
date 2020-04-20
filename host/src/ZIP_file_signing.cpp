@@ -7,7 +7,6 @@
 #include <iostream>
 #include <experimental/filesystem>
 #include <cassert>
-#include <algorithm>
 
 namespace ZIP_file_signing {
 	using namespace ZIP_file_reading;
@@ -16,11 +15,11 @@ namespace ZIP_file_signing {
 	ZIP_file::ZIP_file(const char *filename, ZipSigner &signer_) : arch(filename), signer(signer_) {}
 
 	std::string	ZIP_file::get_result_name(std::string& arch) {
-		reverse(arch.begin(), arch.end());
+		arch.reverse();
 		size_t found = arch.find("/");
-		reverse(arch.begin(), arch.end());
+		arch.reverse();
 		if (found != std::string::npos)
-			return arch.substr(0, arch.length() - found);
+			return arch.substr(arch.length() - found, found);
 		else
 			return "";
 	}
