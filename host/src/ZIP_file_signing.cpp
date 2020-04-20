@@ -20,7 +20,7 @@ namespace ZIP_file_signing {
 		size_t found = arch.find("/");
 		reverse(arch.begin(), arch.end());
 		if (found != std::string::npos)
-			return arch.substr(arch.length() - found, found);
+			return arch.substr(0, arch.length() - found);
 		else
 			return "";
 	}
