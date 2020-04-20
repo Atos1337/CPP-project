@@ -118,9 +118,9 @@ namespace ZIP_file_signing {
 
 	void ZIP_file::load_certificate_and_signing(const std::string& certificate) {
 		std::ifstream in(arch.c_str(), std::ios::binary);
-		std::string tmp = get_result_name(arch);
-		tmp += "result.zip";
-		std::ofstream out(tmp.c_str(), std::ios::binary);
+		std::string test = get_result_name(arch);
+		test += "result.zip";
+		std::ofstream out(test.c_str(), std::ios::binary);
 		EOCD eocd;
 		in >> eocd;
 		std::vector<uint32_t> lfh_offsets(eocd.totalCentralDirectoryRecord);

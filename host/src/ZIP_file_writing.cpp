@@ -97,7 +97,7 @@ uint16_t serialize(const std::string& certificate, uint8_t *&buf) {
 	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
 	BIO_ptr bio_mem(BIO_new(BIO_s_mem()), BIO_free);
 	BIO_puts(bio_mem.get(), certificate.c_str());
-	X509_ptr x509(PEM_read_bio_X509(bio_mem.get(), NULL, NULL, NULL), X509_free);
+	X509_ptr x509(PEM_read_bio_X509_AUX(bio_mem.get(), NULL, NULL, NULL), X509_free);
 	uint16_t size = i2d_X509(x509.get(), &buf);
 	return size;
 }
