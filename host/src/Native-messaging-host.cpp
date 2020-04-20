@@ -57,7 +57,7 @@ std::optional<std::string> openZip() {
 std::vector<std::string> bytesToNames(const std::vector<std::vector<uint8_t>> &v) {
     std::vector<std::string> res;
     for (auto &i : v) {
-        res.push_back(std::string(v.cbegin(), v.cend()));
+        res.push_back(std::string(i.cbegin(), i.cend() - 1));
     }
     return res;
 }
