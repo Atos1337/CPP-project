@@ -14,6 +14,16 @@ namespace ZIP_file_signing {
 
 	ZIP_file::ZIP_file(const char *filename, ZipSigner &signer_) : arch(filename), signer(signer_) {}
 
+	std::string	ZIP_file::get_result_name(std::string& arch) {
+		arch.reverse();
+		size_t found = arch.find("/");
+		arch.reverse();
+		if (found != std::string::npos)
+			return arch.substr(arch.length() - found, found);
+		else
+			return "";
+	}
+
 	std::vector<std::vector<uint8_t>> ZIP_file::get_filenames() {
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		EOCD eocd;
@@ -30,7 +40,9 @@ namespace ZIP_file_signing {
 
 	void ZIP_file::signing() {
 		std::ifstream in(arch.c_str(), std::ios::binary);
-		std::ofstream out("tmp.zip", std::ios::binary);
+		std::string tmp = get_result_name(arch);
+		tmp += "tmp.zip";
+		std::ofstream out(tmp.c_str(), std::ios::binary);
 		EOCD eocd;
 		in >> eocd;
 		std::vector<uint32_t> lfh_offsets(eocd.totalCentralDirectoryRecord);
@@ -69,7 +81,7 @@ namespace ZIP_file_signing {
 		std::experimental::filesystem::remove(arch.c_str());
 		out << eocd;
 		out.close();
-		std::experimental::filesystem::rename("tmp.zip", arch.c_str());
+		std::experimental::filesystem::rename(tmp.c_str(), arch.c_str());
 	}
 
 	bool ZIP_file::check_sign() {
@@ -103,9 +115,11 @@ namespace ZIP_file_signing {
 		return is_correct;
 	}
 
-	void ZIP_file::load_certificate(const char *certificate) {
+	void ZIP_file::load_certificate(const std::string& certificate) {
 		std::ifstream in(arch.c_str(), std::ios::binary);
-		std::ofstream out("tmp.zip", std::ios::binary);
+		std::string tmp = get_result_name(arch);
+		tmp += "result.zip";
+		std::ofstream out(tmp.c_str(), std::ios::binary);
 		EOCD eocd;
 		in >> eocd;
 		std::vector<uint32_t> lfh_offsets(eocd.totalCentralDirectoryRecord);
@@ -140,18 +154,10 @@ namespace ZIP_file_signing {
 			}
 			out << cdfh;
 		}
-		std::cerr << "a";
 		out << eocd;
-		std::cerr << "b";
 		in.close();
-		// std::experimental::filesystem::remove(arch.c_str());
-		//remove(arch.c_str());
-		std::cerr << "c";
 		out.close();
-		std::cerr << "d";
-		std::experimental::filesystem::rename("tmp.zip", "test.zip");
-		arch = "test.zip";
-		std::cerr << "e";
+		arch = tmp;
 	}
 
 	auto ZIP_file::get_certificate(const CentralDirectoryFileHeader &cdfh) -> X509_ptr {

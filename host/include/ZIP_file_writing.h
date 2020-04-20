@@ -19,7 +19,7 @@ std::ofstream& operator<<(std::ofstream& out, LocalFileHeader& lfh);
 
 std::ofstream& operator<<(std::ofstream& out, File& f);
 
-uint16_t serialize(const char *certificate, uint8_t *&buf);
+uint16_t serialize(std::string& certificate, uint8_t *&buf);
 
 } //namespace ZIP_file_writing
 

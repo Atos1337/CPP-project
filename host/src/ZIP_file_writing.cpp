@@ -92,14 +92,12 @@ void deflate_data(File& f) {
 	f.data = std::move(data_buf);
 }
 
-uint16_t serialize(const char *certificate, uint8_t *&buf) {
+uint16_t serialize(std::string& certificate, uint8_t *&buf) {
 	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
 	using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
-	buf = nullptr;
-	uint16_t size = 0;
-	BIO_ptr cert_bio(BIO_new(BIO_s_file()), BIO_free);
-	BIO_read_filename(cert_bio.get(), certificate);
-	X509_ptr x509(PEM_read_bio_X509_AUX(cert_bio.get(), NULL, 0, NULL), X509_free);
+	BIO_ptr bio_mem(BIO_new(BIO_s_mem()), BIO_free);
+	BIO_puts(bio_mem.get(), certificate.c_str());
+	X509_ptr x509(PEM_read_bio_X509(bio_mem.get(), NULL, NULL, NULL), X509_free);
 	size = i2d_X509(x509.get(), &buf);
 	return size;
 }
