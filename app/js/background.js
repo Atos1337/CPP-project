@@ -11,14 +11,16 @@ port.onDisconnect.addListener(function() {
 let ids2filename = {};
 
 chrome.downloads.onChanged.addListener(function(delta) {
-    console.log(delta);
-    if (!delta.state ||
-        (delta.state.current != 'complete')) {
+  if (!delta.state ||
+      (delta.state.current != 'complete')) {
+    if (delta.filename) {
         ids2filename[delta.id] = delta.filename.current;
-        return;
     }
-    port.postMessage({"request": "Check certificate in file", 
-                    "filepath" : ids2filename[delta.id]});
+    return;
+  }
+  if (delta.state.current == 'complete') {
+    port.postMessage({"request" : "Check certificate in file", "filepath" : ids2filename[delta.id]});
+  }
 });
 
 function openAndCheckCertificate() {
