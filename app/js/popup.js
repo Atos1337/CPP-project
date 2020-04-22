@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', function () {
             chrome.runtime.sendMessage({message: "openAndSign"}, (response) => {});
           }
         );
+  document.getElementById('settingsButton').addEventListener('click', function (event) {
+    if (chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    } 
+    else {
+      window.open(chrome.runtime.getURL('options.html'));
+    }
+  }, true);
 }); 
 
 //
