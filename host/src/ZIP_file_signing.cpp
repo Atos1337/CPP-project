@@ -124,6 +124,7 @@ namespace ZIP_file_signing {
 		EOCD eocd;
 		in >> eocd;
 		std::vector<uint32_t> lfh_offsets(eocd.totalCentralDirectoryRecord);
+		std::cerr << eocd.totalCentralDirectoryRecord << '\n';
 		in.seekg(eocd.centralDirectoryOffset, in.beg);
 		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
