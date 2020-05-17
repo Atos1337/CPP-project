@@ -1,21 +1,40 @@
 // Saves options to chrome.storage
-function save_options() {
-  var files = document.getElementById('privateKeyFile').files;
-  if (files.length) {
-    var reader = new FileReader();
-    reader.onload = function(){
-      var certReader = new FileReader();
-      var certfiles = document.getElementById('certificateFile').files;
-      certReader.onload = function(){
-          chrome.storage.sync.set({
-            privateKey: reader.result,
-            certificate: certReader.result,
-        }, function() {});
-      };
-      certReader.readAsBinaryString(certfiles[0]);
-    };
-    reader.readAsBinaryString(files[0]);
+
+function readFile(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function() { callback(reader.result); };
+  reader.readAsBinaryString(file);
+}
+
+function readFiles(files, callback) {
+  var result = new Array();
+  function readFileByIndex(index) {
+    if (index >= files.length) {
+      callback(result);
+      return;
+    }
+    readFile(files[index], (res) => {
+      result.push(res);
+      readFileByIndex(index + 1);
+    })
   }
+  readFileByIndex(0);
+}
+
+function save_options() {
+
+  var privateKeyFile = document.getElementById('privateKeyFile').files[0];
+  var certificateFile = document.getElementById('certificateFile').files[0];
+  var certificatesStore = document.getElementById('certificatesStore').files;
+  readFile(privateKeyFile, (privateKey) => {
+    chrome.storage.sync.set({privateKey: privateKey}, function() {});
+  });
+  readFile(certificateFile, (certificate) => {
+    chrome.storage.sync.set({certificate: certificate}, function() {});
+  });
+  readFiles(certificatesStore, (certificates) => {
+    chrome.storage.sync.set({certificatesStore: certificates}, function() {});
+  });
 }
 
 function restore_options() {
