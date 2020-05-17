@@ -11,7 +11,7 @@ using json = nlohmann::json;
 #if _WIN32
 #define DEFAULT_PATH "C:\\"
 #else
-#define DEFAULT_PATH "/tmp"
+#define DEFAULT_PATH "/home/peter/Downloads/"
 #endif
 
 namespace message {
@@ -44,7 +44,7 @@ void sendMessage(const json &json_msg) {
 namespace {
 
 std::optional<std::string> openZip() {
-    auto f = pfd::open_file("Choose files to read", "/home/peter/Study/HSE/CPP-project/host",
+    auto f = pfd::open_file("Choose files to read", DEFAULT_PATH,
                         { "Zip Files (.zip)", "*.zip",
                           "All Files", "*" },
                         true);
