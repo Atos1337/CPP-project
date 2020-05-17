@@ -10,6 +10,8 @@ enum class valid_signatures : uint32_t {
 	DD = 0x08074b50,
 	CDFH = 0x02014b50,
 	EOCD = 0x06054b50,
+    EOCD64 = 0x06064b50,
+    Locator = 0x07064b50
 };
 
 struct extraFieldRecord {
@@ -43,13 +45,15 @@ struct LocalFileHeader {
     std::vector<uint8_t> filename;
     // Дополнительные данные (размером extraFieldLength)
     std::vector<extraFieldRecord> extraField;
+
+    bool is_64() const;
 };
 
 struct File {
     std::vector<uint8_t> data;
     uint16_t compressionMethod;
-    uint32_t compressedSize;
-    uint32_t uncompressedSize;
+    uint64_t compressedSize;
+    uint64_t uncompressedSize;
 };
 
 struct DataDescriptor {
@@ -100,6 +104,23 @@ struct CentralDirectoryFileHeader {
     std::vector<extraFieldRecord> extraField;
     // Комментарий к файла (длиной fileCommentLength)
     std::vector<uint8_t> fileComment;
+
+    bool is_64() const;
+};
+
+struct ZIP64EI{
+    ZIP64EI(const std::vector<uint8_t> &data);
+    ZIP64EI() = default;
+
+    void to_vector(std::vector<uint8_t> &res);
+    // Размер несжатых данных
+    uint64_t uncompressedSize;
+    // Размер сжатых данных
+    uint64_t compressedSize;
+    // Смещение Local File Header от начала файла
+    uint64_t localFileHeaderOffset;
+    // Номер диска для поиска
+    uint32_t diskNumber;
 };
 
 struct EOCD {
@@ -119,5 +140,41 @@ struct EOCD {
     uint16_t commentLength;
     // Комментарий (длиной commentLength)
     std::vector<uint8_t> comment;
+
+    bool is_64() const;
+};
+
+struct EOCD64Locator {
+    // Номер диска для поиска EOCD64
+    uint32_t diskNumber;
+    // Смещение от начала файла до EOCD64
+    uint64_t eocd64Offset;
+    // Количество дисков
+    uint32_t totalDiskCount;
+};
+
+struct EOCD64 {
+    EOCD64() = default;
+    EOCD64(const EOCD &eocd);
+    // Размер записи EOCD64
+    uint64_t eocd64Size;
+    // Версия для создания
+    uint16_t versionMadeBy;
+    // Версия для распаковки
+    uint16_t versionToExtract;
+    // Номер текущего диска
+    uint32_t diskNumber;
+    // Номер диска для поиска Central Directory
+    uint32_t startDiskNumber;
+    // Количество записей в Central Directory
+    uint64_t numberCentralDirectoryRecord;
+    // Всего записей в Central Directory
+    uint64_t totalCentralDirectoryRecord;
+    // Размер Central Directory
+    uint64_t sizeOfCentralDirectory;
+    // Смещение Central Directory
+    uint64_t centralDirectoryOffset;
+    // zip64 extensible data sector (переменной длины)
+    std::vector<uint8_t> data_sector;
 };
 #pragma pack(pop)

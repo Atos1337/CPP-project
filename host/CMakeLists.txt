@@ -10,7 +10,6 @@ add_executable(Native-messaging-host
         include/json.hpp
         include/portable-file-dialogs.h
         include/signer.h
-        include/Test_function_for_sign.h
         include/ZIP_file_headers.h
         include/ZIP_file_reading.h
         include/ZIP_file_signing.h
@@ -18,10 +17,11 @@ add_executable(Native-messaging-host
         include/zipSigner.hpp
         src/Native-messaging-host.cpp
         src/signer.cpp
-        src/Test_function_for_sign.cpp
+	src/ZIP_file_headers.cpp
         src/ZIP_file_reading.cpp
         src/ZIP_file_signing.cpp
         src/ZIP_file_writing.cpp
+        src/ZIP_file_headers.cpp
         src/zipSigner.cpp)
 
 set_property(TARGET Native-messaging-host PROPERTY CXX_STANDARD 17)

@@ -23,6 +23,23 @@ std::ofstream& operator<<(std::ofstream& out, EOCD& eocd) {
 	return out;
 }
 
+std::ofstream& operator<<(std::ofstream& out, EOCD64Locator& locator) {
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::Locator);
+	out.write(reinterpret_cast<char*>(&signature), sizeof(uint32_t));
+	out.write(reinterpret_cast<char*>(&locator), sizeof(locator));
+	return out;
+}
+
+std::ofstream& operator<<(std::ofstream& out, EOCD64& eocd64) {
+	uint32_t signature = static_cast<uint32_t>(valid_signatures::EOCD64);
+	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
+	out.write(reinterpret_cast<char *>(&eocd64), sizeof(eocd64) - sizeof(eocd64.data_sector));
+	if (eocd64.data_sector.size()) {
+		out.write(reinterpret_cast<char *>(eocd64.data_sector.data()), eocd64.data_sector.size());
+	}
+	return out;
+}
+
 std::ofstream& operator<<(std::ofstream& out, CentralDirectoryFileHeader& cdfh) {
 	uint32_t signature = static_cast<uint32_t>(valid_signatures::CDFH);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));

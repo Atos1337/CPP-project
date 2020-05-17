@@ -11,6 +11,10 @@ namespace ZIP_file_writing{
 
 std::ofstream& operator<<(std::ofstream& out, EOCD& eocd);
 
+std::ofstream& operator<<(std::ofstream& out, EOCD64Locator& locator);
+
+std::ofstream& operator<<(std::ofstream& out, EOCD64& eocd64);
+
 std::ofstream& operator<<(std::ofstream& out, CentralDirectoryFileHeader& cdfh);
 
 std::ofstream& operator<<(std::ofstream& out, DataDescriptor& dd);
