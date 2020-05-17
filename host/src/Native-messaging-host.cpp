@@ -115,7 +115,8 @@ int main(){
                 std::cerr << msg["certificate"] << std::endl;
                 zip_file.load_certificate_and_signing(msg["certificate"]);
 
-                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames()); 
+                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
+                j["Create sign"] = "OK";
             }
             message::sendMessage(j);
         }
