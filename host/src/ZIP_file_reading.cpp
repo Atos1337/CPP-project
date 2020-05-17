@@ -33,6 +33,43 @@ std::ifstream& operator>>(std::ifstream& in, EOCD& eocd) {
 	return in;
 }
 
+std::ifstream& operator>>(std::ifstream& in, EOCD64Locator& locator) {
+	in.seekg(0, in.end);
+	size_t filesize = in.tellg();
+	size_t offset;
+	for (offset = filesize - sizeof(EOCD) - sizeof(uint32_t) + sizeof(std::vector<uint8_t>); offset > 0; offset--) {
+		uint32_t signature = 0;
+		in.seekg(offset, in.beg);
+		in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
+		if (signature == static_cast<uint32_t>(valid_signatures::EOCD)) 
+			break;
+	}
+	for (offset = offset - sizeof(locator); offset > 0; offset--) {
+		uint32_t signature = 0;
+		in.seekg(offset, in.beg);
+		in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
+		if (signature == static_cast<uint32_t>(valid_signatures::Locator)) 
+			break;
+	}
+	in.read(reinterpret_cast<char *>(&locator), sizeof(locator));
+	return in;
+}
+
+std::ifstream& operator>>(std::ifstream& in, EOCD64& eocd64) {
+	uint32_t signature;
+	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
+	if (signature != static_cast<uint32_t>(valid_signatures::EOCD64)) {
+		std::cerr << "ERROR: EOCD64 not found!\n";
+		//throw
+	}
+	in.read(reinterpret_cast<char*>(&eocd64), sizeof(eocd64) - sizeof(eocd64.data_sector));
+	uint64_t size = eocd64.eocd64Size + 12 - 28;
+	if (size) {
+		in.read(reinterpret_cast<char *>(eocd64.data_sector.data()), size);
+	}
+	return in;
+}
+
 std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 	uint32_t signature = 0;
 	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
@@ -130,6 +167,15 @@ auto deserialize(std::vector<uint8_t>& certificate) -> X509_ptr {
 	uint8_t *buf = certificate.data();
 	X509_ptr x509(d2i_X509(NULL, const_cast<const uint8_t **>(&buf), certificate.size()), X509_free);
 	return std::move(x509);
+}
+
+std::string get_certificate_to_check(X509_ptr x509) {
+	using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
+	BIO_ptr cert_bio(BIO_new(BIO_s_mem()), BIO_free);
+	PEM_write_bio_X509(cert_bio.get(), x509.get());
+	BUF_MEM *mem = nullptr;
+    BIO_get_mem_ptr(cert_bio.get(), &mem);
+    return {reinterpret_cast<char *>(mem->data), mem->length - 1};
 }
 
 } //namespace ZIP_file_reading
