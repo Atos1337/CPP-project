@@ -1,12 +1,34 @@
 var port = chrome.runtime.connectNative('com.project.native_messaging_host');
 
+function haveInStore(certificate, callback) {
+  chrome.storage.sync.get({
+   certificatesStore: null
+  }, function(items) { 
+    find = false; 
+    for (let i = 0; i < items.certificatesStore.length; i++) { // выведет 0, затем 1, затем 2
+      if (items.certificatesStore[i].trim() == certificate.trim()) {
+        find = true;
+        break;
+      }
+    }
+    callback(find);
+  });
+}
+
 port.onMessage.addListener(function onNativeMessage(msg) {
     var icon;
     if (msg["Create sign"] == "OK") {
         icon = "info"
     }
     else if (msg["Verified"] == "OK") {
-        icon = "success";
+        haveInStore(msg["Certificate"], (have) => {
+          if (have) {
+            icon = "success";
+          }
+          else {
+            icon = "warning";
+          }
+        });
     }
     else {
         icon = "error";

@@ -41,6 +41,7 @@ function restore_options() {
   chrome.storage.sync.get({
     privateKey: null,
     certificate: null,
+    certificatesStore: null
   }, function(items) {  
 
   var status = document.getElementById('status');
@@ -48,6 +49,7 @@ function restore_options() {
 
   var status2 = document.getElementById('status2');
   status2.textContent = items.certificate;
+  //console.log(items.certificatesStore);
     //alert(items);
     // document.getElementById('privatyKeyFile') = items.privateKey;
   });

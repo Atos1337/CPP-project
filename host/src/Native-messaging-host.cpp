@@ -92,6 +92,9 @@ int main(){
                 ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
                 j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
                 j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
+                if (j["Verified"] == "OK") {
+                    j["Certificate"] = zip_file.get_certificate_by_string();
+                }
             }
             //string part1 = 
             // auto part2 = (R"({"Verified": "OK",
