@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
   checkButton = document.getElementById('checkZip');
   signButton = document.getElementById('signZip');
 
-  checkButton.setAttribute('disabled', true);
-  signButton.setAttribute('disabled', true);
+  //checkButton.setAttribute('disabled', true);
+  //signButton.setAttribute('disabled', true);
 
   //disableWithHint(checkButton, "Выберите доверенные сертификаты в настройках");
   //disableWithHint(signButton, "Выберите ключи в настройках");
