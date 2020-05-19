@@ -5,7 +5,7 @@ function haveInStore(certificate, callback) {
    certificatesStore: null
   }, function(items) { 
     find = false; 
-    for (let i = 0; i < items.certificatesStore.length; i++) { // выведет 0, затем 1, затем 2
+    for (let i = 0; i < items.certificatesStore.length; i++) {
       if (items.certificatesStore[i].trim() == certificate.trim()) {
         find = true;
         break;
@@ -13,6 +13,10 @@ function haveInStore(certificate, callback) {
     }
     callback(find);
   });
+}
+
+function prettyNativeMessageFormater(msg) {
+  return JSON.stringify(msg, null, 2);
 }
 
 port.onMessage.addListener(function onNativeMessage(msg) {
@@ -45,7 +49,7 @@ port.onMessage.addListener(function onNativeMessage(msg) {
       left: left,
       top: top
     }, (window) => {
-      setTimeout(() => {  chrome.runtime.sendMessage({extensionId: window.id, text: JSON.stringify(msg, null, 2), icon: icon, id: window.id}, (response) => {}); }, 200);
+      setTimeout(() => {  chrome.runtime.sendMessage({extensionId: window.id, text: prettyNativeMessageFormater(msg), icon: icon, id: window.id}, (response) => {}); }, 200);
     });
 });
 
