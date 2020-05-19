@@ -1,55 +1,69 @@
 var port = chrome.runtime.connectNative('com.project.native_messaging_host');
 
-function haveInStore(certificate, callback) {
+function isTrusted(certificate, callback) {
+  if (!certificate) {
+    callback(false);
+    return;
+  }
   chrome.storage.sync.get({
    certificatesStore: null
   }, function(items) { 
     find = false; 
-    for (let i = 0; i < items.certificatesStore.length; i++) {
-      if (items.certificatesStore[i].trim() == certificate.trim()) {
-        find = true;
-        break;
+    if (items.certificatesStore) {
+      for (let i = 0; i < items.certificatesStore.length; i++) {
+        if (items.certificatesStore[i].trim() == certificate.trim()) {
+          find = true;
+          break;
+        }
       }
     }
     callback(find);
   });
 }
 
-function prettyNativeMessageFormater(msg) {
-  return JSON.stringify(msg, null, 2);
+function prettyNativeMessageFormater(msg, callback) {
+  isTrusted(msg["Certificate"], (trusted) => {
+    var icon, text;
+    if (msg["Create sign"] == "OK") {
+      icon = "info";
+      text = "Файл " + msg["ArchiveName"] + " успешно подписан";
+    }
+    else if (msg["Verified"] == "OK") {
+      if (trusted) {
+        icon = "success";
+        text = "Подпись архива" + msg["ArchiveName"] + " совпала, Вы доверяете этому сертификату";
+      }
+      else {
+        icon = "warning";
+        text = "Подпись архива" + msg["ArchiveName"] + " совпала, но данного сертификата нет в Вашем списке доверенных"
+      }
+    }
+    else {
+      icon = "error";
+      text = "Подпись архива " + msg["ArchiveName"] + " не совпала или не найдена";
+    }
+    callback(icon, text);
+  });
 }
 
 port.onMessage.addListener(function onNativeMessage(msg) {
-    var icon;
-    if (msg["Create sign"] == "OK") {
-        icon = "info"
-    }
-    else if (msg["Verified"] == "OK") {
-        haveInStore(msg["Certificate"], (have) => {
-          if (have) {
-            icon = "success";
-          }
-          else {
-            icon = "warning";
-          }
-        });
-    }
-    else {
-        icon = "error";
-    }
-    var w = 500;
-    var h = 500;
-    var left = (screen.width/2)-(w/2);
-    var top = (screen.height/2)-(h/2); 
-    chrome.windows.create({
-      url: chrome.runtime.getURL("alert.html"),
-      type: "popup",
-      width: w,
-      height: h,
-      left: left,
-      top: top
-    }, (window) => {
-      setTimeout(() => {  chrome.runtime.sendMessage({extensionId: window.id, text: prettyNativeMessageFormater(msg), icon: icon, id: window.id}, (response) => {}); }, 200);
+    prettyNativeMessageFormater(msg, (icon, text) => {
+      var w = 500;
+      var h = 500;
+      var left = (screen.width / 2) - (w / 2);
+      var top = (screen.height / 2) - (h / 2); 
+      chrome.windows.create({
+        url: chrome.runtime.getURL("alert.html"),
+        type: "popup",
+        width: w,
+        height: h,
+        left: left,
+        top: top
+      }, (window) => {
+        setTimeout(() => {  
+          chrome.runtime.sendMessage({extensionId: window.id, text: text, icon: icon, id: window.id}, (response) => {}); 
+        }, 200);
+      });
     });
 });
 
