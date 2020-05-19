@@ -1,36 +1,70 @@
 // Saves options to chrome.storage
-function save_options() {
-  var files = document.getElementById('privateKeyFile').files;
-  if (files.length) {
-    var reader = new FileReader();
-    reader.onload = function(){
-      var certReader = new FileReader();
-      var certfiles = document.getElementById('certificateFile').files;
-      certReader.onload = function(){
-          chrome.storage.sync.set({
-            privateKey: reader.result,
-            certificate: certReader.result,
-        }, function() {});
-      };
-      certReader.readAsBinaryString(certfiles[0]);
-    };
-    reader.readAsBinaryString(files[0]);
+
+function readFile(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function() { callback(reader.result); };
+  reader.readAsBinaryString(file);
+}
+
+function readFiles(files, callback) {
+  var result = new Array();
+  function readFileByIndex(index) {
+    if (index >= files.length) {
+      callback(result);
+      return;
+    }
+    readFile(files[index], (res) => {
+      result.push(res);
+      readFileByIndex(index + 1);
+    })
   }
+  readFileByIndex(0);
+}
+
+function save_options() {
+  var privateKeyFiles = document.getElementById('privateKeyFile').files;
+  var certificateFiles = document.getElementById('certificateFile').files;
+  var certificatesStore = document.getElementById('certificatesStore').files;
+  if (privateKeyFiles.length) {
+      readFile(privateKeyFiles[0], (privateKey) => {
+      chrome.storage.sync.set({privateKey: privateKey}, function() {});
+      restore_options();
+    });
+  }
+  if (certificateFiles.length) {
+    readFile(certificateFile[0], (certificate) => {
+      chrome.storage.sync.set({certificate: certificate}, function() {});
+      restore_options();
+    });
+  }
+  readFiles(certificatesStore, (certificates) => {
+    chrome.storage.sync.set({certificatesStore: certificates}, function() {});
+    restore_options();
+  });
 }
 
 function restore_options() {
   chrome.storage.sync.get({
     privateKey: null,
     certificate: null,
+    certificatesStore: null
   }, function(items) {  
 
-  var status = document.getElementById('status');
-  status.textContent = items.privateKey;
+  if (items.privateKey) {
+    var privateKeyStatus = document.getElementById('privateKeyStatus');
+    privateKeyStatus.textContent = "Приватный ключ загружен";
+    //privateKeyStatus.textContent = items.privateKey;
+  }
+  if (items.certificate) {
+    var certificateStatus = document.getElementById('certificateStatus');
+    certificateStatus.textContent = "Публичный ключ загружен";
+    //certificateStatus.textContent = items.certificate;
+  }
 
-  var status2 = document.getElementById('status2');
-  status2.textContent = items.certificate;
-    //alert(items);
-    // document.getElementById('privatyKeyFile') = items.privateKey;
+  if (items.certificatesStore && items.certificatesStore.length >= 1) {
+    var certificatesStoreStatus = document.getElementById('certificatesStoreStatus');
+    certificatesStoreStatus.textContent = "Загружены " + items.certificatesStore.length + " доверенных сертификата"
+  }
   });
 }
 document.addEventListener('DOMContentLoaded', restore_options);

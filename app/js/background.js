@@ -1,7 +1,52 @@
 var port = chrome.runtime.connectNative('com.project.native_messaging_host');
 
+function haveInStore(certificate, callback) {
+  chrome.storage.sync.get({
+   certificatesStore: null
+  }, function(items) { 
+    find = false; 
+    for (let i = 0; i < items.certificatesStore.length; i++) { // выведет 0, затем 1, затем 2
+      if (items.certificatesStore[i].trim() == certificate.trim()) {
+        find = true;
+        break;
+      }
+    }
+    callback(find);
+  });
+}
+
 port.onMessage.addListener(function onNativeMessage(msg) {
-    alert(JSON.stringify(msg, null, 2));
+    var icon;
+    if (msg["Create sign"] == "OK") {
+        icon = "info"
+    }
+    else if (msg["Verified"] == "OK") {
+        haveInStore(msg["Certificate"], (have) => {
+          if (have) {
+            icon = "success";
+          }
+          else {
+            icon = "warning";
+          }
+        });
+    }
+    else {
+        icon = "error";
+    }
+    var w = 500;
+    var h = 500;
+    var left = (screen.width/2)-(w/2);
+    var top = (screen.height/2)-(h/2); 
+    chrome.windows.create({
+      url: chrome.runtime.getURL("alert.html"),
+      type: "popup",
+      width: w,
+      height: h,
+      left: left,
+      top: top
+    }, (window) => {
+      setTimeout(() => {  chrome.runtime.sendMessage({extensionId: window.id, text: JSON.stringify(msg, null, 2), icon: icon, id: window.id}, (response) => {}); }, 200);
+    });
 });
 
 port.onDisconnect.addListener(function() {
@@ -37,12 +82,16 @@ function openAndSignCertificate() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.message === "openAndCheck") {
-      openAndCheckCertificate();
+    if (request.message === "Close me pls") {
       sendResponse({message: "OK"});
+      chrome.windows.remove(request.id);
+    }
+    if (request.message === "openAndCheck") {
+      sendResponse({message: "OK"});
+      openAndCheckCertificate();
     }
     else if (request.message === "openAndSign") {
-        openAndSignCertificate();
         sendResponse({message: "OK"});
+        openAndSignCertificate();
     }
 });
