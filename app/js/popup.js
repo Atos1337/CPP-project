@@ -1,11 +1,13 @@
-function disableWithHint(button, hint) {
+function disableWithHint(button) {
   button.setAttribute('disabled', true);
-  button.text = hint;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  checkButton = document.getElementById('checkCerty');
-  signButton = document.getElementById('signCerty');
+  checkButton = document.getElementById('checkZip');
+  signButton = document.getElementById('signZip');
+
+  checkButton.setAttribute('disabled', true);
+  signButton.setAttribute('disabled', true);
 
   //disableWithHint(checkButton, "Выберите доверенные сертификаты в настройках");
   //disableWithHint(signButton, "Выберите ключи в настройках");
