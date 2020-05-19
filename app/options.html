@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html>
-<head><title>Crypto plugin options</title></head>
+<head> 
+<meta charset="utf-8">
+<title>Crypto plugin options</title>
+</head>
 <body>
 <form>
   <div class="form-group">
-    <label for="exampleFormControlFile1">Private key</label>
-    <input type="file" class="form-control-file" id="privateKeyFile">
-    <label for="exampleFormControlFile1">Certificate</label>
-    <input type="file" class="form-control-file" id="certificateFile">
-
-    <label for="exampleFormControlFile1">Certificates Store</label>
-    <input type="file" class="form-control-file" id="certificatesStore" multiple>
+    <div>
+        <label for="formPrivateKeyFile">Private key</label>
+        <input type="file" class="form-control-file" id="privateKeyFile">
+    </div>
+    <div>
+        <label for="formCertificateFile">Certificate</label>
+        <input type="file" class="form-control-file" id="certificateFile">
+    </div>
+    <div>
+        <label for="formCertificatesStore">Certificates Store</label>
+        <input type="file" class="form-control-file" id="certificatesStore" multiple>
+    </div>
   </div>
 </form>
-<div id="status"></div>
-<div id="status2"></div>
+<div id="privateKeyStatus"></div>
+<div id="certificateStatus"></div>
+<div id="certificatesStoreStatus"></div>
 
 <button id="save">Save</button>
 

@@ -22,18 +22,24 @@ function readFiles(files, callback) {
 }
 
 function save_options() {
-
-  var privateKeyFile = document.getElementById('privateKeyFile').files[0];
-  var certificateFile = document.getElementById('certificateFile').files[0];
+  var privateKeyFiles = document.getElementById('privateKeyFile').files;
+  var certificateFiles = document.getElementById('certificateFile').files;
   var certificatesStore = document.getElementById('certificatesStore').files;
-  readFile(privateKeyFile, (privateKey) => {
-    chrome.storage.sync.set({privateKey: privateKey}, function() {});
-  });
-  readFile(certificateFile, (certificate) => {
-    chrome.storage.sync.set({certificate: certificate}, function() {});
-  });
+  if (privateKeyFiles.length) {
+      readFile(privateKeyFiles[0], (privateKey) => {
+      chrome.storage.sync.set({privateKey: privateKey}, function() {});
+      restore_options();
+    });
+  }
+  if (certificateFiles.length) {
+    readFile(certificateFile[0], (certificate) => {
+      chrome.storage.sync.set({certificate: certificate}, function() {});
+      restore_options();
+    });
+  }
   readFiles(certificatesStore, (certificates) => {
     chrome.storage.sync.set({certificatesStore: certificates}, function() {});
+    restore_options();
   });
 }
 
@@ -44,14 +50,21 @@ function restore_options() {
     certificatesStore: null
   }, function(items) {  
 
-  var status = document.getElementById('status');
-  status.textContent = items.privateKey;
+  if (items.privateKey) {
+    var privateKeyStatus = document.getElementById('privateKeyStatus');
+    privateKeyStatus.textContent = "Приватный ключ загружен";
+    //privateKeyStatus.textContent = items.privateKey;
+  }
+  if (items.certificate) {
+    var certificateStatus = document.getElementById('certificateStatus');
+    certificateStatus.textContent = "Публичный ключ загружен";
+    //certificateStatus.textContent = items.certificate;
+  }
 
-  var status2 = document.getElementById('status2');
-  status2.textContent = items.certificate;
-  //console.log(items.certificatesStore);
-    //alert(items);
-    // document.getElementById('privatyKeyFile') = items.privateKey;
+  if (items.certificatesStore && items.certificatesStore.length >= 1) {
+    var certificatesStoreStatus = document.getElementById('certificatesStoreStatus');
+    certificatesStoreStatus.textContent = "Загружены " + items.certificatesStore.length + " доверенных сертификата"
+  }
   });
 }
 document.addEventListener('DOMContentLoaded', restore_options);
