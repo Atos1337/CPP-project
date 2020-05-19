@@ -37,10 +37,12 @@ function save_options() {
       restore_options();
     });
   }
-  readFiles(certificatesStore, (certificates) => {
-    chrome.storage.sync.set({certificatesStore: certificates}, function() {});
-    restore_options();
-  });
+  if (certificatesStore.length) {
+    readFiles(certificatesStore, (certificates) => {
+      chrome.storage.sync.set({certificatesStore: certificates}, function() {});
+      restore_options();
+    });
+  }
 }
 
 function restore_options() {

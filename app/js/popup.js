@@ -1,16 +1,19 @@
-function disableWithHint(button) {
-  button.setAttribute('disabled', true);
-}
-
 document.addEventListener('DOMContentLoaded', function () {
   checkButton = document.getElementById('checkZip');
   signButton = document.getElementById('signZip');
 
-  //checkButton.setAttribute('disabled', true);
-  //signButton.setAttribute('disabled', true);
-
-  //disableWithHint(checkButton, "Выберите доверенные сертификаты в настройках");
-  //disableWithHint(signButton, "Выберите ключи в настройках");
+  chrome.storage.sync.get({
+    privateKey: null,
+    certificate: null,
+    certificatesStore: null
+  }, function(items) {  
+    if (!items.privateKey || !items.certificate) {
+      signButton.setAttribute('disabled', true);
+    }
+    if (!items.certificatesStore || !items.certificatesStore.length) {
+      checkButton.setAttribute('disabled', true);
+    }
+  });
 
   checkButton.addEventListener(
         'click', () => {
