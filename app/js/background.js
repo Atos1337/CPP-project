@@ -1,5 +1,4 @@
 var port = chrome.runtime.connectNative('com.project.native_messaging_host');
-
 function isTrusted(certificate, callback) {
   if (!certificate) {
     callback(false);
@@ -62,7 +61,7 @@ port.onMessage.addListener(function onNativeMessage(msg) {
       }, (window) => {
         setTimeout(() => {  
           chrome.runtime.sendMessage({extensionId: window.id, text: text, icon: icon, id: window.id}, (response) => {}); 
-        }, 200);
+        }, 500);
       });
     });
 });
