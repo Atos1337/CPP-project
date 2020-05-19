@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <iostream>
+#include <cassert>
 
 enum class valid_signatures : uint32_t {
     LFH = 0x04034b50,
@@ -106,13 +108,17 @@ struct CentralDirectoryFileHeader {
     std::vector<uint8_t> fileComment;
 
     bool is_64() const;
+
+    extraFieldRecord& get_efr_of_ei();
 };
 
 struct ZIP64EI{
-    ZIP64EI(const std::vector<uint8_t> &data);
+    ZIP64EI(const std::vector<uint8_t> &data, const CentralDirectoryFileHeader &cdfh);
+    ZIP64EI(const std::vector<uint8_t> &data, const LocalFileHeader &cdfh);
     ZIP64EI() = default;
 
-    void to_vector(std::vector<uint8_t> &res);
+    int to_vector(std::vector<uint8_t> &res, CentralDirectoryFileHeader &cdfh);
+    int to_vector(std::vector<uint8_t> &res, LocalFileHeader &cdfh);
     // Размер несжатых данных
     uint64_t uncompressedSize;
     // Размер сжатых данных

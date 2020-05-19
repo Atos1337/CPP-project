@@ -62,10 +62,10 @@ namespace ZIP_file_signing {
 			centralDirectoryOffset = eocd64.centralDirectoryOffset;
 			totalCentralDirectoryRecord = eocd64.totalCentralDirectoryRecord;
 		}
-		std::vector<uint32_t> lfh_offsets(totalCentralDirectoryRecord);
+		std::vector<uint64_t> lfh_offsets(totalCentralDirectoryRecord);
 		in.seekg(centralDirectoryOffset, in.beg);
 		X509_ptr certificate(nullptr, X509_free);
-		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+		for (size_t i = 0; i < totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
 			in >> cdfh;
 			if (i == 0) {
@@ -73,10 +73,12 @@ namespace ZIP_file_signing {
 			}
 			lfh_offsets[i] = cdfh.localFileHeaderOffset;
 			if (cdfh.is_64() && cdfh.localFileHeaderOffset == 0xFFFFFFFF) {
-				lfh_offsets[i] = ZIP64EI(get_ei(cdfh)).localFileHeaderOffset;
+				lfh_offsets[i] = ZIP64EI(get_ei(cdfh), cdfh).localFileHeaderOffset;
 			}
 		}
-		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+		if (!certificate)
+			return false;
+		for (size_t i = 0; i < totalCentralDirectoryRecord; ++i) {
 			in.seekg(lfh_offsets[i], in.beg);
 			LocalFileHeader lfh;
 			File f;
@@ -85,7 +87,7 @@ namespace ZIP_file_signing {
 			uint64_t uncompressedSize = lfh.uncompressedSize;
 			ZIP64EI ei;
 			if (lfh.is_64()) {
-				ei = ZIP64EI(get_ei(lfh));
+				ei = ZIP64EI(get_ei(lfh), lfh);
 				if (lfh.compressedSize == 0xFFFFFFFF)
 					compressedSize = ei.compressedSize;
 				if (lfh.uncompressedSize == 0xFFFFFFFF)
@@ -121,15 +123,15 @@ namespace ZIP_file_signing {
 		}
 		std::vector<uint64_t> lfh_offsets(totalCentralDirectoryRecord);
 		in.seekg(centralDirectoryOffset, in.beg);
-		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+		for (size_t i = 0; i < totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
 			in >> cdfh;
 			lfh_offsets[i] = cdfh.localFileHeaderOffset;
 			if (cdfh.is_64() && cdfh.localFileHeaderOffset == 0xFFFFFFFF) {
-				lfh_offsets[i] = ZIP64EI(get_ei(cdfh)).localFileHeaderOffset;
+				lfh_offsets[i] = ZIP64EI(get_ei(cdfh), cdfh).localFileHeaderOffset;
 			}
 		}
-		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+		for (size_t i = 0; i < totalCentralDirectoryRecord; ++i) {
 			in.seekg(lfh_offsets[i], in.beg);
 			lfh_offsets[i] = out.tellp();
 			LocalFileHeader lfh;
@@ -139,7 +141,7 @@ namespace ZIP_file_signing {
 			uint64_t uncompressedSize = lfh.uncompressedSize;
 			ZIP64EI ei;
 			if (lfh.is_64()) {
-				ei = ZIP64EI(get_ei(lfh));
+				ei = ZIP64EI(get_ei(lfh), lfh);
 				if (lfh.compressedSize == 0xFFFFFFFF)
 					compressedSize = ei.compressedSize;
 				if (lfh.uncompressedSize == 0xFFFFFFFF)
@@ -159,7 +161,7 @@ namespace ZIP_file_signing {
 		in.seekg(centralDirectoryOffset, in.beg);
 		centralDirectoryOffset = out.tellp();
 		uint64_t sizeOfCentralDirectory = out.tellp();
-		for (int i = 0; i < eocd.totalCentralDirectoryRecord; ++i) {
+		for (size_t i = 0; i < totalCentralDirectoryRecord; ++i) {
 			CentralDirectoryFileHeader cdfh;
 			in >> cdfh;
 			if (i == 0) {
@@ -170,7 +172,20 @@ namespace ZIP_file_signing {
 				memcpy(efr.data.data(), buf, size);
 				cdfh.extraField.push_back(std::move(efr));
 			}
-			cdfh.localFileHeaderOffset = lfh_offsets[i];
+			if (!cdfh.is_64())
+				cdfh.localFileHeaderOffset = lfh_offsets[i];
+			if (cdfh.is_64() && lfh_offsets[i] >= 0xFFFFFFFF) {
+				extraFieldRecord &efr = cdfh.get_efr_of_ei();
+				std::vector<uint8_t> &data = get_ei(cdfh);
+				int delta = data.size();
+				ZIP64EI ei(data, cdfh);
+				ei.localFileHeaderOffset = lfh_offsets[i];
+				cdfh.localFileHeaderOffset = 0xFFFFFFFF;
+				ei.to_vector(data, cdfh);
+				delta = data.size() - delta;
+				cdfh.extraFieldLength += delta;
+				efr.size += delta;
+			}
 			if (!cdfh.is_64() && lfh_offsets[i] >= 0xFFFFFFFF) {
 				ZIP64EI ei;
 				ei.uncompressedSize = cdfh.uncompressedSize;
@@ -178,33 +193,28 @@ namespace ZIP_file_signing {
 				ei.localFileHeaderOffset = lfh_offsets[i];
 				ei.diskNumber = cdfh.diskNumber;
 				extraFieldRecord efr = {0x0001, 28, std::vector<uint8_t>(28)};
-				ei.to_vector(efr.data);
+				cdfh.localFileHeaderOffset = 0xFFFFFFFF;
+				int size = ei.to_vector(efr.data, cdfh);
+				efr.size = efr.data.size();
 				cdfh.extraField.push_back(std::move(efr));
-				cdfh.localFileHeaderOffset = 0xFFFFFFFF;
-			}
-			if (cdfh.is_64() && lfh_offsets[i] >= 0xFFFFFFFF) {
-				std::vector<uint8_t> &data = get_ei(cdfh);
-				ZIP64EI ei(data);
-				ei.localFileHeaderOffset = lfh_offsets[i];
-				cdfh.localFileHeaderOffset = 0xFFFFFFFF;
-				ei.to_vector(data);
+				cdfh.extraFieldLength += size + 4;
 			}
 			out << cdfh;
 		}
 		uint64_t eocd64Offset = out.tellp();
 		sizeOfCentralDirectory = eocd64Offset - sizeOfCentralDirectory;
 		if (eocd.is_64()) {
-			eocdl.eocd64Offset = eocd64Offset + sizeof(eocdl) + sizeof(eocd) + 2 * sizeof(uint32_t);
+			eocdl.eocd64Offset = eocd64Offset;
 			eocd64.sizeOfCentralDirectory = sizeOfCentralDirectory;
 			eocd64.centralDirectoryOffset = centralDirectoryOffset;
-			out << eocdl << eocd << eocd64;
+			out << eocd64 << eocdl << eocd;
 		} else if (sizeOfCentralDirectory >= 0xFFFFFFFF || centralDirectoryOffset >= 0xFFFFFFFF) {
 			eocd64 = EOCD64(eocd);
 			eocd64.sizeOfCentralDirectory = sizeOfCentralDirectory;
 			eocd64.centralDirectoryOffset = centralDirectoryOffset;
-			eocdl = {eocd.diskNumber, eocd64Offset + sizeof(eocdl) + sizeof(eocd) + 2 * sizeof(uint32_t), eocd.diskNumber};
+			eocdl = {eocd.diskNumber, eocd64Offset, eocd.diskNumber};
 			eocd.centralDirectoryOffset = eocd.sizeOfCentralDirectory = 0xFFFFFFFF;
-			out << eocdl << eocd << eocd64;
+			out << eocd64 << eocdl << eocd;
 		} else {
 			eocd.centralDirectoryOffset = centralDirectoryOffset;
 			eocd.sizeOfCentralDirectory = sizeOfCentralDirectory;
@@ -218,8 +228,17 @@ namespace ZIP_file_signing {
 	std::string ZIP_file::get_certificate_by_string() {
         std::ifstream in(arch.c_str(), std::ios::binary);
         EOCD eocd;
-        in >> eocd;
-        in.seekg(eocd.centralDirectoryOffset, in.beg);
+		EOCD64Locator eocdl;
+		EOCD64 eocd64;
+		in >> eocd;
+		uint64_t centralDirectoryOffset = eocd.centralDirectoryOffset;
+		if (eocd.is_64()) {
+			in >> eocdl;
+			in.seekg(eocdl.eocd64Offset, in.beg);
+			in >> eocd64;
+			centralDirectoryOffset = eocd64.centralDirectoryOffset;
+		}
+        in.seekg(centralDirectoryOffset, in.beg);
         CentralDirectoryFileHeader cdfh;
         in >> cdfh;
         return get_certificate_to_check(get_certificate(cdfh));
@@ -233,13 +252,16 @@ namespace ZIP_file_signing {
 				break;
 			}
 		}
+		if (certificate.size() == 0)
+			return {nullptr, X509_free};
 		return std::move(deserialize(certificate));
 	}
 
 	std::vector<uint8_t>& ZIP_file::get_ei(CentralDirectoryFileHeader &cdfh) {
 		for (size_t i = 0; i < cdfh.extraField.size(); ++i) {
-			if (cdfh.extraField[i].signature == 0x0001)
+			if (cdfh.extraField[i].signature == 0x0001) {
 				return cdfh.extraField[i].data;
+			}
 		}
 		return cdfh.extraField[0].data;
 	}
