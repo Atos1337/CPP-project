@@ -1,5 +1,3 @@
-// Saves options to chrome.storage
-
 function readFile(file, callback) {
   var reader = new FileReader();
   reader.onload = function() { callback(reader.result); };
@@ -55,12 +53,10 @@ function restore_options() {
   if (items.privateKey) {
     var privateKeyStatus = document.getElementById('privateKeyStatus');
     privateKeyStatus.textContent = "Приватный ключ загружен";
-    //privateKeyStatus.textContent = items.privateKey;
   }
   if (items.certificate) {
     var certificateStatus = document.getElementById('certificateStatus');
     certificateStatus.textContent = "Публичный ключ загружен";
-    //certificateStatus.textContent = items.certificate;
   }
 
   if (items.certificatesStore && items.certificatesStore.length >= 1) {
