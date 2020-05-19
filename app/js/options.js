@@ -32,7 +32,7 @@ function save_options() {
     });
   }
   if (certificateFiles.length) {
-    readFile(certificateFile[0], (certificate) => {
+    readFile(certificateFiles[0], (certificate) => {
       chrome.storage.sync.set({certificate: certificate}, function() {});
       restore_options();
     });
