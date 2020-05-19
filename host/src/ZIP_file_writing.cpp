@@ -33,7 +33,7 @@ std::ofstream& operator<<(std::ofstream& out, EOCD64Locator& locator) {
 std::ofstream& operator<<(std::ofstream& out, EOCD64& eocd64) {
 	uint32_t signature = static_cast<uint32_t>(valid_signatures::EOCD64);
 	out.write(reinterpret_cast<char *>(&signature), sizeof(uint32_t));
-	out.write(reinterpret_cast<char *>(&eocd64), sizeof(eocd64) - sizeof(eocd64.data_sector));
+	out.write(reinterpret_cast<char *>(&eocd64), sizeof(eocd64) - eocd64.data_sector.size());
 	if (eocd64.data_sector.size()) {
 		out.write(reinterpret_cast<char *>(eocd64.data_sector.data()), eocd64.data_sector.size());
 	}

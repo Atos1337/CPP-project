@@ -44,7 +44,7 @@ std::ifstream& operator>>(std::ifstream& in, EOCD64Locator& locator) {
 		if (signature == static_cast<uint32_t>(valid_signatures::EOCD)) 
 			break;
 	}
-	for (offset = offset - sizeof(locator); offset > 0; offset--) {
+	for (offset = offset - sizeof(locator) - sizeof(uint32_t); offset > 0; offset--) {
 		uint32_t signature = 0;
 		in.seekg(offset, in.beg);
 		in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
@@ -63,8 +63,9 @@ std::ifstream& operator>>(std::ifstream& in, EOCD64& eocd64) {
 		//throw
 	}
 	in.read(reinterpret_cast<char*>(&eocd64), sizeof(eocd64) - sizeof(eocd64.data_sector));
-	uint64_t size = eocd64.eocd64Size + 12 - 28;
+	uint64_t size = eocd64.eocd64Size + 12 - 56;
 	if (size) {
+		eocd64.data_sector.resize(size);
 		in.read(reinterpret_cast<char *>(eocd64.data_sector.data()), size);
 	}
 	return in;
@@ -75,7 +76,7 @@ std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 	in.read(reinterpret_cast<char *>(&signature), sizeof(signature));
 	if (signature != static_cast<uint32_t>(valid_signatures::CDFH)) {
 		std::cerr << "ERROR: CentralDirectoryFileHeader not found!\n";
-		//throw
+		//throw;
 	}
 	in.read(reinterpret_cast<char *>(&cdfh), sizeof(cdfh) - sizeof(cdfh.extraField) - sizeof(cdfh.fileComment) - sizeof(cdfh.filename));
 	if (cdfh.filenameLength) {
@@ -84,7 +85,7 @@ std::ifstream& operator>>(std::ifstream& in, CentralDirectoryFileHeader& cdfh) {
 		cdfh.filename[cdfh.filenameLength] = 0;
 	}
 	if (cdfh.extraFieldLength) {
-		uint32_t extrafield_offset = in.tellg();
+		uint64_t extrafield_offset = in.tellg();
 		for (size_t offset = extrafield_offset; offset - extrafield_offset < cdfh.extraFieldLength;) {
 			extraFieldRecord efr;
 			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
@@ -127,7 +128,7 @@ std::ifstream& operator>>(std::ifstream& in, LocalFileHeader& lfh) {
 		lfh.filename[lfh.filenameLength] = 0;
 	}
 	if (lfh.extraFieldLength) {
-		uint32_t extrafield_offset = in.tellg();
+		uint64_t extrafield_offset = in.tellg();
 		for (size_t offset = extrafield_offset; offset - extrafield_offset < lfh.extraFieldLength;) {
 			extraFieldRecord efr;
 			in.read(reinterpret_cast<char *>(&efr.signature), sizeof(uint16_t));
