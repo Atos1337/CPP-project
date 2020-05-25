@@ -87,7 +87,6 @@ int main(){
             }
             else {
                 j["ArchiveName"] = *filepath;
-                //j["ArchiveFiles"] = {"1.txt", "2.txt"}; 
                 ZipSigner zipSigner;
                 ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
                 j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
