@@ -11,7 +11,7 @@ using json = nlohmann::json;
 #if _WIN32
 #define DEFAULT_PATH "C:\\"
 #else
-#define DEFAULT_PATH "/home/peter/Downloads/"
+#define DEFAULT_PATH "/home/"
 #endif
 
 namespace message {
