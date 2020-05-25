@@ -42,11 +42,11 @@ function prettyNativeMessageFormater(msg, callback) {
     else if (msg["Verified"] == "OK") {
       if (trusted) {
         icon = "success";
-        text = "Подпись архива" + msg["ArchiveName"] + " совпала, Вы доверяете этому сертификату";
+        text = "Подпись архива " + msg["ArchiveName"] + " совпала, Вы доверяете этому сертификату";
       }
       else {
         icon = "warning";
-        text = "Подпись архива" + msg["ArchiveName"] + " совпала, но данного сертификата нет в Вашем списке доверенных"
+        text = "Подпись архива " + msg["ArchiveName"] + " совпала, но данного сертификата нет в Вашем списке доверенных"
       }
       text += '<div class="certificateData">' + prettyCertificateDataFormater(msg["CertificateData"]) + "</div>";
     }
