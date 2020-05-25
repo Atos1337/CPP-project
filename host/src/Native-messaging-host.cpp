@@ -64,62 +64,74 @@ std::vector<std::string> bytesToNames(const std::vector<std::vector<uint8_t>> &v
 
 }
 
+namespace certificate {
+
+json check(const json &msg) {
+    std::optional<std::string> filepath = std::nullopt;
+    if (msg["request"] == "Check certificate in file") {
+        if (msg.find("filepath") != msg.end()) {
+            filepath = msg["filepath"];
+        }
+    }
+    else {
+        filepath = openZip();
+    }
+    json j;
+    if (!filepath) {
+        j["Error"] = "No file found";
+    }
+    else {
+        j["ArchiveName"] = *filepath;
+        ZipSigner zipSigner;
+        ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
+        j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
+        j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
+        if (j["Verified"] == "OK") {
+            j["Certificate"] = zip_file.get_certificate_by_string();
+            j["CertificateData"] = zip_file.getCertificateData();
+        }
+    }
+    return j;
+}
+
+json sign(const json &msg) {
+    std::optional<std::string> filepath = openZip();
+    json j;
+    if (!filepath) {
+        j["Error"] = "No file found";
+        
+    }
+    else if (msg.find("privateKey") == msg.end() || msg["privateKey"].size() == 0) {
+        j["Error"] = "No private key found";
+    }
+    else {
+        j["ArchiveName"] = *filepath;
+        ZipSigner zipSigner(msg["privateKey"]);
+        ZIP_file_signing::ZIP_file zip_file((*filepath).c_str(), zipSigner);
+        std::cerr << msg["certificate"] << std::endl;
+        zip_file.load_certificate_and_signing(msg["certificate"]);
+
+        j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
+        j["Create sign"] = "OK";
+    }
+}
+
+} // namespace certificate
+
 int main(){
-    
     while (true) {
         json msg = message::getMessage();
         //std::cerr << msg.dump() << std::endl;
+        json res;
         if (msg["request"] == "Check certificate in file" ||
                 msg["request"] == "Open and check certificate") {
 
-            std::optional<std::string> filepath = std::nullopt;
-            if (msg["request"] == "Check certificate in file") {
-                if (msg.find("filepath") != msg.end()) {
-                    filepath = msg["filepath"];
-                }
-            }
-            else {
-                filepath = openZip();
-            }
-            json j;
-            if (!filepath) {
-                j["Error"] = "No file found";
-            }
-            else {
-                j["ArchiveName"] = *filepath;
-                ZipSigner zipSigner;
-                ZIP_file_signing::ZIP_file zip_file(filepath->c_str(), zipSigner);
-                j["Verified"] = zip_file.check_sign() ? "OK" : "FAILED";
-                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
-                if (j["Verified"] == "OK") {
-                    j["Certificate"] = zip_file.get_certificate_by_string();
-                    j["CertificateData"] = zip_file.getCertificateData();
-                }
-            }
-            message::sendMessage(j);
+            res = certificate::check(msg);
         }
         else if (msg["request"] == "Open and sign certificate") {
-            std::optional<std::string> filepath = openZip();
-            json j;
-            if (!filepath) {
-                j["Error"] = "No file found";
-                
-            }
-            else if (msg.find("privateKey") == msg.end() || msg["privateKey"].size() == 0) {
-                j["Error"] = "No private key found";
-            }
-            else {
-                j["ArchiveName"] = *filepath;
-                ZipSigner zipSigner(msg["privateKey"]);
-                ZIP_file_signing::ZIP_file zip_file((*filepath).c_str(), zipSigner);
-                std::cerr << msg["certificate"] << std::endl;
-                zip_file.load_certificate_and_signing(msg["certificate"]);
-
-                j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
-                j["Create sign"] = "OK";
-            }
-            message::sendMessage(j);
+            res = certificate::sign(msg);
         }
+        message::sendMessage(res);
     }
     return 0;
 }
