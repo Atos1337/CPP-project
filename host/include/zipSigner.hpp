@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include "openssl/x509.h"
 #include "signer.h"
 
@@ -16,4 +17,6 @@ public:
     bool verify(X509* certificate,
                 const std::vector<uint8_t> &bytes,
                 const std::vector<uint8_t> &signature);
+
+    std::unordered_map<std::string, std::string> getCertificateData(X509* certificate);
 };

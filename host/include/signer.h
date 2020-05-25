@@ -18,13 +18,13 @@
 #include <memory>
 #include <sstream>
 
-class Signer{
+class Signer {
 public:
-	Signer();
-	~Signer();
 	std::string signMessage(std::string privateKey, std::string plainText);
 	bool verifySignature(X509* certificate, std::string plainText, std::string signatureBase64);
+  std::string getCertificateData(X509* certificate);
 private:
+  const size_t MAX_BIO_LEN = 4096;
 	RSA* createPrivateRSA(std::string key);
 	RSA* createPublicRSA(std::string key);
 	bool RSASign( RSA* rsa,
@@ -43,5 +43,5 @@ private:
                    char** base64Text);
 	size_t calcDecodeLength(const char* b64input);
 	void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length);
-    std::string extractPublicKey(X509 *certificate);
+  std::string extractPublicKey(X509 *certificate);
 };

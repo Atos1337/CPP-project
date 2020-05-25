@@ -2,10 +2,6 @@
 
 using BIO_ptr  = std::unique_ptr<BIO, decltype(&BIO_free)>;
 
-Signer::Signer(){}
-
-Signer::~Signer(){}
-
 RSA* Signer::createPrivateRSA(std::string key) {
     RSA *rsa = NULL;
     const char* c_string = key.c_str();
@@ -166,4 +162,13 @@ bool Signer::verifySignature(X509* certificate, std::string plainText, std::stri
     Base64Decode(signatureBase64.c_str(), &encMessage, &encMessageLength);
     bool result = RSAVerifySignature(publicRSA, encMessage, encMessageLength, plainText.c_str(), plainText.length(), &authentic);
     return result & authentic;
+}
+
+std::string Signer::getCertificateData(X509* certificate) {
+    BIO_ptr bio_output_ptr(BIO_new(BIO_s_mem()), BIO_free);
+    X509_NAME_print_ex(bio_output_ptr.get(), X509_get_subject_name(certificate), 0, 0);
+    char buffer[MAX_BIO_LEN];
+    memset(buffer, 0, MAX_BIO_LEN);
+    BIO_read(bio_output_ptr.get(), buffer, MAX_BIO_LEN - 1);
+    return std::string(buffer);
 }
