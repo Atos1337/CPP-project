@@ -103,6 +103,27 @@ namespace ZIP_file_signing {
 		return is_correct;
 	}
 
+	std::unordered_map<std::string, std::string> ZIP_file::getCertificateData() {
+		std::ifstream in(arch.c_str(), std::ios::binary);
+        EOCD eocd;
+		EOCD64Locator eocdl;
+		EOCD64 eocd64;
+		in >> eocd;
+		uint64_t centralDirectoryOffset = eocd.centralDirectoryOffset;
+		if (eocd.is_64()) {
+			in >> eocdl;
+			in.seekg(eocdl.eocd64Offset, in.beg);
+			in >> eocd64;
+			centralDirectoryOffset = eocd64.centralDirectoryOffset;
+		}
+        in.seekg(centralDirectoryOffset, in.beg);
+        CentralDirectoryFileHeader cdfh;
+        X509_ptr certificate(nullptr, X509_free);
+        in >> cdfh;
+        certificate = std::move(get_certificate(cdfh));
+        return signer.getCertificateData(certificate.get());
+	}
+
 	void ZIP_file::load_certificate_and_signing(const std::string& certificate) {
 		std::ifstream in(arch.c_str(), std::ios::binary);
 		std::string test = get_result_name(arch);
