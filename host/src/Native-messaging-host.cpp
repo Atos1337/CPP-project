@@ -94,11 +94,9 @@ int main(){
                 j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
                 if (j["Verified"] == "OK") {
                     j["Certificate"] = zip_file.get_certificate_by_string();
+                    j["CertificateData"] = zip_file.getCertificateData();
                 }
             }
-            //string part1 = 
-            // auto part2 = (R"({"Verified": "OK",
-            //     "ArchiveFiles" : ["1.txt", "2.txt"]})"_json);
             message::sendMessage(j);
         }
         else if (msg["request"] == "Open and sign certificate") {

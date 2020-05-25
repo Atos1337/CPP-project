@@ -4,3 +4,11 @@
 .swal2-container.swal2-backdrop-show, .swal2-container.swal2-noanimation {
     background: white !important;
 }
+
+.certificateData {
+    margin: 10px;
+    font-size: medium;
+    text-align: left;
+    padding: 10px;
+    box-shadow: 0 0px 1px 0px black;
+}

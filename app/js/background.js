@@ -21,6 +21,18 @@ function isTrusted(certificate, callback) {
 }
 
 function prettyNativeMessageFormater(msg, callback) {
+  function prettyCertificateDataFormater(data) {
+    function processValue(name, value) {
+      return "<div>" + name + " " + value + "</div>";
+    }
+    return processValue("Страна", data["C"]) + 
+              processValue("Город", data["ST"]) +
+              processValue("Населённый пункт", data["L"]) +
+              processValue("Организация", data["O"]) +
+              processValue("Подразделение организации", data["OU"]) +
+              processValue("Имя", data["CN"]) +
+              processValue("Почта", data["emailAddress"]);
+  }
   isTrusted(msg["Certificate"], (trusted) => {
     var icon, text;
     if (msg["Create sign"] == "OK") {
@@ -36,6 +48,7 @@ function prettyNativeMessageFormater(msg, callback) {
         icon = "warning";
         text = "Подпись архива" + msg["ArchiveName"] + " совпала, но данного сертификата нет в Вашем списке доверенных"
       }
+      text += '<div class="certificateData">' + prettyCertificateDataFormater(msg["CertificateData"]) + "</div>";
     }
     else {
       icon = "error";
