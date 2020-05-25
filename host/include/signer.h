@@ -18,30 +18,31 @@
 #include <memory>
 #include <sstream>
 
+constexpr size_t MAX_BIO_LEN = 4096;
+
 class Signer {
 public:
-	std::string signMessage(std::string privateKey, std::string plainText);
-	bool verifySignature(X509* certificate, std::string plainText, std::string signatureBase64);
-  std::string getCertificateData(X509* certificate);
+	std::string signMessage(std::string privateKey, std::string plainText) const;
+	bool verifySignature(X509* certificate, std::string plainText, std::string signatureBase64) const;
+  std::string getCertificateData(X509* certificate) const;
 private:
-  const size_t MAX_BIO_LEN = 4096;
-	RSA* createPrivateRSA(std::string key);
-	RSA* createPublicRSA(std::string key);
-	bool RSASign( RSA* rsa,
+	RSA* createPrivateRSA(std::string key) const;
+	RSA* createPublicRSA(std::string key) const;
+	bool RSASign(RSA* rsa,
               const unsigned char* Msg,
               size_t MsgLen,
               unsigned char** EncMsg,
-              size_t* MsgLenEnc);
+              size_t* MsgLenEnc) const;
 	bool RSAVerifySignature( RSA* rsa,
                          unsigned char* MsgHash,
                          size_t MsgHashLen,
                          const char* Msg,
                          size_t MsgLen,
-                         bool* Authentic);
-	void Base64Encode( const unsigned char* buffer,
+                         bool* Authentic) const;
+	void Base64Encode(const unsigned char* buffer,
                    size_t length,
-                   char** base64Text);
-	size_t calcDecodeLength(const char* b64input);
-	void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length);
-  std::string extractPublicKey(X509 *certificate);
+                   char** base64Text) const;
+	size_t calcDecodeLength(const char* b64input) const;
+	void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length) const;
+  std::string extractPublicKey(X509 *certificate) const;
 };

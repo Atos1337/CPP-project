@@ -2,7 +2,7 @@
 
 using BIO_ptr  = std::unique_ptr<BIO, decltype(&BIO_free)>;
 
-RSA* Signer::createPrivateRSA(std::string key) {
+RSA* Signer::createPrivateRSA(std::string key) const {
     RSA *rsa = NULL;
     const char* c_string = key.c_str();
     BIO * keybio = BIO_new_mem_buf((void*)c_string, -1);
@@ -13,7 +13,7 @@ RSA* Signer::createPrivateRSA(std::string key) {
     return rsa;
 }
 
-RSA* Signer::createPublicRSA(std::string key) {
+RSA* Signer::createPublicRSA(std::string key) const {
     RSA *rsa = NULL;
     BIO *keybio;
     const char* c_string = key.c_str();
@@ -29,7 +29,7 @@ bool Signer::RSASign( RSA* rsa,
               const unsigned char* Msg,
               size_t MsgLen,
               unsigned char** EncMsg,
-              size_t* MsgLenEnc) {
+              size_t* MsgLenEnc) const {
     EVP_MD_CTX* m_RSASignCtx = EVP_MD_CTX_create();
     EVP_PKEY* priKey  = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(priKey, rsa);
@@ -55,7 +55,7 @@ bool Signer::RSAVerifySignature( RSA* rsa,
                          size_t MsgHashLen,
                          const char* Msg,
                          size_t MsgLen,
-                         bool* Authentic) {
+                         bool* Authentic) const {
     *Authentic = false;
     EVP_PKEY* pubKey  = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(pubKey, rsa);
@@ -85,9 +85,9 @@ bool Signer::RSAVerifySignature( RSA* rsa,
     }
 }
 
-void Signer::Base64Encode( const unsigned char* buffer,
+void Signer::Base64Encode(const unsigned char* buffer,
                    size_t length,
-                   char** base64Text) {
+                   char** base64Text) const {
     BIO *bio, *b64;
     BUF_MEM *bufferPtr;
 
@@ -104,7 +104,7 @@ void Signer::Base64Encode( const unsigned char* buffer,
     *base64Text=(*bufferPtr).data;
 }
 
-size_t Signer::calcDecodeLength(const char* b64input) {
+size_t Signer::calcDecodeLength(const char* b64input) const {
     size_t len = strlen(b64input), padding = 0;
 
     if (b64input[len-1] == '=' && b64input[len-2] == '=') 
@@ -114,7 +114,7 @@ size_t Signer::calcDecodeLength(const char* b64input) {
     return (len*3)/4 - padding;
 }
 
-void Signer::Base64Decode(const char* b64message, unsigned char** buffer, size_t* length) {
+void Signer::Base64Decode(const char* b64message, unsigned char** buffer, size_t* length) const {
     BIO *bio, *b64;
 
     int decodeLen = calcDecodeLength(b64message);
@@ -129,7 +129,7 @@ void Signer::Base64Decode(const char* b64message, unsigned char** buffer, size_t
     BIO_free_all(bio);
 }
 
-std::string Signer::signMessage(std::string privateKey, std::string plainText) {
+std::string Signer::signMessage(std::string privateKey, std::string plainText) const {
     RSA* privateRSA = createPrivateRSA(privateKey); 
     unsigned char* encMessage;
     char* base64Text;
@@ -141,7 +141,8 @@ std::string Signer::signMessage(std::string privateKey, std::string plainText) {
     return s;
 }
 
-std::string Signer::extractPublicKey(X509* certificate) {
+std::string Signer::extractPublicKey(X509* certificate) const {
+    assert(certificate);
     BIO* bio = BIO_new(BIO_s_mem());
     char* buffer;
     PEM_write_bio_PUBKEY(bio, X509_get_pubkey(certificate));
@@ -153,7 +154,8 @@ std::string Signer::extractPublicKey(X509* certificate) {
     return s;
 }
 
-bool Signer::verifySignature(X509* certificate, std::string plainText, std::string signatureBase64) {
+bool Signer::verifySignature(X509* certificate, std::string plainText, std::string signatureBase64) const {
+    assert(certificate);
     std::string publicKey = extractPublicKey(certificate);
     RSA* publicRSA = createPublicRSA(publicKey);
     unsigned char* encMessage;
@@ -164,7 +166,8 @@ bool Signer::verifySignature(X509* certificate, std::string plainText, std::stri
     return result & authentic;
 }
 
-std::string Signer::getCertificateData(X509* certificate) {
+std::string Signer::getCertificateData(X509* certificate) const {
+    assert(certificate);
     BIO_ptr bio_output_ptr(BIO_new(BIO_s_mem()), BIO_free);
     X509_NAME_print_ex(bio_output_ptr.get(), X509_get_subject_name(certificate), 0, 0);
     char buffer[MAX_BIO_LEN];
