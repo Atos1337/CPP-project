@@ -33,6 +33,10 @@ function prettyNativeMessageFormater(msg, callback) {
               processValue("Имя", data["CN"]) +
               processValue("Почта", data["emailAddress"]);
   }
+  if (!msg || "Error" in msg) {
+    callback("error", "Произошла ошибка при работе с архивом");
+    return;
+  }
   isTrusted(msg["Certificate"], (trusted) => {
     var icon, text;
     if (msg["Create sign"] == "OK") {
