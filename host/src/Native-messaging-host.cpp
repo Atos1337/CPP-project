@@ -8,12 +8,6 @@
 
 using json = nlohmann::json;
 
-#if _WIN32
-#define DEFAULT_PATH "C:\\"
-#else
-#define DEFAULT_PATH "/home/"
-#endif
-
 namespace message {
 
 json getMessage() {
@@ -44,7 +38,7 @@ void sendMessage(const json &json_msg) {
 namespace {
 
 std::optional<std::string> openZip() {
-    auto f = pfd::open_file("Choose files to read", DEFAULT_PATH,
+    auto f = pfd::open_file("Choose files to read", "",
                         { "Zip Files (.zip)", "*.zip",
                           "All Files", "*" },
                         true);
@@ -114,6 +108,7 @@ json sign(const json &msg) {
         j["ArchiveFiles"] = bytesToNames(zip_file.get_filenames());
         j["Create sign"] = "OK";
     }
+    return j;
 }
 
 } // namespace certificate
