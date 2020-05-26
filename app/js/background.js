@@ -94,7 +94,10 @@ chrome.downloads.onChanged.addListener(function(delta) {
     return;
   }
   if (delta.state.current == 'complete') {
-    port.postMessage({"request" : "Check certificate in file", "filepath" : ids2filename[delta.id]});
+    var re = /(?:\.([^.]+))?$/;
+    if (re.exec(ids2filename[delta.id])[1] == "zip") {
+      port.postMessage({"request" : "Check certificate in file", "filepath" : ids2filename[delta.id]});
+    }
   }
 });
 
