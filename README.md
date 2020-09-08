@@ -1,25 +1,25 @@
 # Crypto Plugin
 
-Плагин для Chrome, позволющий подписывать и проверять наличие сертификата zip архива
+Chrome Extension, which allows to sign zip-file or check its signature.
 
-## Установка
+## How to install
 
-Перейдите во вкладку Extensions в Chrome, включите Developer mode и выберите опцию Load unpacked, в которой укажите папку app, скопируйте значение ID.
+Go to extension tab in Chrome, enable Developer mode and click on Load unpacked option, where select app folder, copy ID value.
 
-Теперь необходимо установить host. Перейдите в соответвующую папку, откройте файл ```com.project.native_messaging_host.json``` и замените ID в поле chrome-extension на ваш.
+Now, you need to install host. Go to the corresponding folder, open file ```com.project.native_messaging_host.json``` and write your ID in chrome-extension field.
 Выполните ```install_host.sh```
 
-После чего соберите host. Вам понадобится библиотека OpenSSL и zlib, остальные библиотеки идут вместе с исходным кодом проекта. Выполните 
+THen you have to build host. You need to install OpenSSL и zlib libraries, other libraries locates in the source code. Run 
 ```bash
 cmake .
 make
 ```
-и обновите плагин в Chrome (кнопка перезагрузки справа-внизу)
-## Использование
-Откройте плагин, перейдите в его настройки. Выберите публичный ключ, приватный ключ, а также доверенные сертификаты. Теперь в интерфейсе плагина можно подписывать и проверять наличие сертификата. Также наличие сертификата проверяется у всех скачиваемых zip-архивов. При подписании архива создаётся его копия с названием result.zip.
+and update Pligin in Chrome (reload button in right-down corner)
+## How to use
+Open plugin and go to the settings. Select and upload your private key, public key and trusted certificates. Now you can sign zip-file and check its signature using Plugin interface. In addition, Plugin checks signature of every downloaded zip-file. After signing, creates signing copy of original file, which named result.zip.
 
-## Удаление
-Выполните ```uninstall_host.sh```, удалите плагин из Chrome.
+## How to delete
+Run ```uninstall_host.sh```, delete extension from Chrome.
 
-## Лицензия
+## License
 [MIT](https://choosealicense.com/licenses/mit/)
